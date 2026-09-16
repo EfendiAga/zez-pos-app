@@ -21,24 +21,31 @@ export function SetupBusiness() {
 
     setLoading(true);
     try {
-      // 1. Create Business with approved trial status
-      const businessRef = await addDoc(collection(db, 'businesses'), {
-        name: name.trim(),
-        type,
-        accessStatus: 'approved',
-        taxRate: 18, // Default MKD DDV
-        currency: 'MKD',
-        ownerId: user.uid,
-        ownerUserId: user.uid,
-        createdAt: new Date().toISOString(),
-        lastActive: new Date().toISOString(),
-        subscription: {
-          plan: 'trial',
-          status: 'active',
-          expiryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
-          autoRenew: false,
-        },
-      });
+      let businessRef;
+      try {
+        businessRef = await addDoc(collection(db, 'businesses'), {
+          name: name.trim(),
+          type,
+          accessStatus: 'approved',
+          taxRate: 18, // Default MKD DDV
+          currency: 'MKD',
+          ownerId: user.uid,
+          ownerUserId: user.uid,
+          createdAt: new Date().toISOString(),
+          lastActive: new Date().toISOString(),
+          subscription: {
+            plan: 'trial',
+            status: 'active',
+            expiryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
+            autoRenew: false,
+          },
+        });
+      } catch (e: any) {
+        console.error('Failed to create business:', e);
+        toast.error('Permission error creating business: ' + e.message);
+        setLoading(false);
+        return;
+      }
 
       // 2. Create / Update User Profile
       const updatedProfile: UserProfile = {
@@ -50,8 +57,15 @@ export function SetupBusiness() {
         status: 'active',
       };
 
-      await setDoc(doc(db, 'users', user.uid), updatedProfile, { merge: true });
-      setProfile(updatedProfile);
+      try {
+        await setDoc(doc(db, 'users', user.uid), updatedProfile, { merge: true });
+        setProfile(updatedProfile);
+      } catch (e: any) {
+        console.error('Failed to update user profile:', e);
+        toast.error('Permission error updating profile: ' + e.message);
+        setLoading(false);
+        return;
+      }
 
       // 3. Add default categories to the root categories collection
       const categoryMap: Record<string, string[]> = {

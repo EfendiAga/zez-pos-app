@@ -6,7 +6,7 @@ service cloud.firestore {
     }
 
     function isTrustedSuperAdminEmail() {
-      return request.auth.token.email == "muhamedsuleyman97@gmail.com";
+      return 'email' in request.auth.token && request.auth.token.email == "muhamedsuleyman97@gmail.com";
     }
 
     function userDoc(userId) {
@@ -104,11 +104,16 @@ service cloud.firestore {
       allow update: if isSuperAdmin() || (
         isAuthenticated() &&
         request.auth.uid == userId &&
-        request.resource.data.uid == resource.data.uid &&
-        request.resource.data.role == resource.data.role &&
         (
           request.resource.data.businessId == resource.data.businessId ||
-          (resource.data.role == 'owner' && resource.data.businessId == '')
+          (
+            request.resource.data.businessId != null &&
+            (
+              !('businessId' in resource.data) || 
+              resource.data.businessId == '' || 
+              resource.data.businessId == null
+            )
+          )
         )
       ) || (
         hasUserProfile() &&
