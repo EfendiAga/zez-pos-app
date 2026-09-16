@@ -1,0 +1,14 @@
+config.json
+{
+  "context": {
+    "workspace": true,
+    "openFiles": true,
+    "terminal": true
+  },
+  "tools": {
+    "writeFile": true,
+    "editFile": true,
+    "deleteFile": true,
+    "runCommand": true
+  }
+}

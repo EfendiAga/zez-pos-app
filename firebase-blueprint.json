@@ -1,0 +1,107 @@
+{
+  "entities": {
+    "Business": {
+      "title": "Business",
+      "description": "Represents a business entity using easyPOS.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the business." },
+        "type": { "type": "string", "enum": ["market", "coffee", "pastry", "bakery", "restaurant"], "description": "The type of business." },
+        "taxRate": { "type": "number", "description": "The default DDV (VAT) rate for this business." },
+        "currency": { "type": "string", "description": "The currency used, default is MKD." },
+        "ownerId": { "type": "string", "description": "The UID of the business owner." }
+      },
+      "required": ["name", "type", "ownerId"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Represents an employee or owner of a business.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["owner", "waiter", "kitchen", "admin"] },
+        "businessId": { "type": "string" }
+      },
+      "required": ["name", "role", "businessId"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "An item available for sale.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "categoryId": { "type": "string" },
+        "stockQuantity": { "type": "number" },
+        "unit": { "type": "string", "enum": ["piece", "kg", "liter"] },
+        "taxRate": { "type": "number", "description": "Specific DDV for this product if different from business default." }
+      },
+      "required": ["name", "price", "categoryId"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product categories.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A sales order or table order.",
+      "type": "object",
+      "properties": {
+        "tableNumber": { "type": "string" },
+        "items": { "type": "array", "description": "List of items in the order." },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "preparing", "ready", "served", "paid", "cancelled"] },
+        "businessId": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["items", "total", "status", "businessId", "createdBy", "createdAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A completed payment record.",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string" },
+        "amount": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["cash", "card"] },
+        "taxAmount": { "type": "number" },
+        "businessId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderId", "amount", "paymentMethod", "businessId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/businesses/{businessId}": {
+      "schema": "Business",
+      "description": "Business settings and profile."
+    },
+    "/businesses/{businessId}/products/{productId}": {
+      "schema": "Product",
+      "description": "Inventory items."
+    },
+    "/businesses/{businessId}/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Product categories."
+    },
+    "/businesses/{businessId}/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Active and past orders."
+    },
+    "/businesses/{businessId}/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Payment records."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and roles."
+    }
+  }
+}

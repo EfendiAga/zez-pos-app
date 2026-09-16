@@ -1,0 +1,194 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isTrustedSuperAdminEmail() {
+      return request.auth.token.email == "muhamedsuleyman97@gmail.com";
+    }
+
+    function userDoc(userId) {
+      return get(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function currentUserDoc() {
+      return userDoc(request.auth.uid);
+    }
+
+    function hasUserProfile() {
+      return isAuthenticated() && currentUserDoc().exists();
+    }
+
+    function currentUserData() {
+      return currentUserDoc().data;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() &&
+        (
+          isTrustedSuperAdminEmail() ||
+          (hasUserProfile() && currentUserData().role == 'super_admin')
+        );
+    }
+
+    function belongsToBusiness(businessId) {
+      return hasUserProfile() && currentUserData().businessId == businessId;
+    }
+
+    function isBusinessOwner(businessId) {
+      return belongsToBusiness(businessId) && currentUserData().role == 'owner';
+    }
+
+    function isBusinessManager(businessId) {
+      return belongsToBusiness(businessId) &&
+        (
+          currentUserData().role == 'owner' ||
+          currentUserData().role == 'manager'
+        );
+    }
+
+    function businessDoc(businessId) {
+      return get(/databases/$(database)/documents/businesses/$(businessId));
+    }
+
+    function businessExists(businessId) {
+      return businessDoc(businessId).exists();
+    }
+
+    function businessData(businessId) {
+      return businessDoc(businessId).data;
+    }
+
+    function businessIsApproved(businessId) {
+      return businessExists(businessId) &&
+        (
+          !(businessData(businessId).accessStatus is string) ||
+          businessData(businessId).accessStatus == 'approved'
+        );
+    }
+
+    function canReadBusinessScopedData(businessId) {
+      return isSuperAdmin() || belongsToBusiness(businessId);
+    }
+
+    function canOperateBusiness(businessId) {
+      return isSuperAdmin() || (belongsToBusiness(businessId) && businessIsApproved(businessId));
+    }
+
+    function canManageBusinessData(businessId) {
+      return isSuperAdmin() || (isBusinessManager(businessId) && businessIsApproved(businessId));
+    }
+
+    function canManagePendingSetup(businessId) {
+      return isSuperAdmin() || isBusinessOwner(businessId);
+    }
+
+    match /users/{userId} {
+      allow read: if isSuperAdmin()
+        || (isAuthenticated() && request.auth.uid == userId)
+        || (hasUserProfile() && userDoc(userId).exists() && belongsToBusiness(userDoc(userId).data.businessId) && isBusinessManager(userDoc(userId).data.businessId));
+
+      allow create: if isSuperAdmin() || (
+        isAuthenticated() && (
+          (request.auth.uid == userId) ||
+          (hasUserProfile() && isBusinessManager(request.resource.data.businessId))
+        )
+      );
+
+      allow delete: if isSuperAdmin() || (
+        hasUserProfile() && isBusinessManager(resource.data.businessId)
+      );
+
+      allow update: if isSuperAdmin() || (
+        isAuthenticated() &&
+        request.auth.uid == userId &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.role == resource.data.role &&
+        (
+          request.resource.data.businessId == resource.data.businessId ||
+          (resource.data.role == 'owner' && resource.data.businessId == '')
+        )
+      ) || (
+        hasUserProfile() &&
+        resource.data.businessId == currentUserData().businessId &&
+        request.resource.data.businessId == resource.data.businessId &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.role == resource.data.role &&
+        (
+          currentUserData().role == 'owner' ||
+          currentUserData().role == 'manager'
+        ) &&
+        request.resource.data.status in ['active', 'pending', 'disabled']
+      );
+    }
+
+    match /businesses/{businessId} {
+      allow read: if canReadBusinessScopedData(businessId);
+
+      allow create: if isAuthenticated() &&
+        (
+          request.resource.data.ownerId == request.auth.uid ||
+          request.resource.data.ownerUserId == request.auth.uid ||
+          isSuperAdmin()
+        );
+
+      allow update: if canManagePendingSetup(businessId) || canManageBusinessData(businessId);
+    }
+
+    match /categories/{categoryId} {
+      allow read: if canReadBusinessScopedData(resource.data.businessId);
+      allow create: if canManagePendingSetup(request.resource.data.businessId) || canManageBusinessData(request.resource.data.businessId);
+      allow update, delete: if canManageBusinessData(resource.data.businessId);
+    }
+
+    match /products/{productId} {
+      allow read: if canReadBusinessScopedData(resource.data.businessId);
+      allow create: if canManageBusinessData(request.resource.data.businessId);
+      allow update, delete: if canManageBusinessData(resource.data.businessId);
+    }
+
+    match /diningTables/{tableId} {
+      allow read: if canReadBusinessScopedData(resource.data.businessId);
+      allow create: if canManageBusinessData(request.resource.data.businessId);
+      allow update: if canManageBusinessData(resource.data.businessId) &&
+        request.resource.data.businessId == resource.data.businessId;
+      allow delete: if canManageBusinessData(resource.data.businessId);
+    }
+
+    match /customers/{customerId} {
+      allow read: if canOperateBusiness(resource.data.businessId);
+      allow create: if canOperateBusiness(request.resource.data.businessId);
+      allow update, delete: if canOperateBusiness(resource.data.businessId);
+    }
+
+    match /orders/{orderId} {
+      allow read: if canOperateBusiness(resource.data.businessId);
+      allow create: if canOperateBusiness(request.resource.data.businessId);
+      allow update: if canOperateBusiness(resource.data.businessId);
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if canOperateBusiness(resource.data.businessId);
+      allow create: if canOperateBusiness(request.resource.data.businessId);
+    }
+
+    match /shifts/{shiftId} {
+      allow read: if canOperateBusiness(resource.data.businessId);
+      allow create: if canOperateBusiness(request.resource.data.businessId);
+      allow update: if canOperateBusiness(resource.data.businessId);
+    }
+
+    match /staffInvites/{inviteId} {
+      allow read: if isSuperAdmin() || (resource.data.businessId != null && canManageBusinessData(resource.data.businessId));
+      allow create: if canManageBusinessData(request.resource.data.businessId);
+      allow update: if (
+        resource.data.businessId != null && canManageBusinessData(resource.data.businessId)
+      ) || (
+        isAuthenticated() &&
+        request.resource.data.acceptedByUid == request.auth.uid
+      );
+    }
+  }
+}
