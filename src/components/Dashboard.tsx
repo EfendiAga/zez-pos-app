@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 import { db, useLiveQuery } from '../lib/db';
-import { canAccessSuperAdmin, getAllowedTabs, getDefaultTab } from '../lib/permissions';
+import { getAllowedTabs, getDefaultTab } from '../lib/permissions';
 import { Analytics } from './Analytics';
 import { Customers } from './Customers';
 import { Inventory } from './Inventory';
@@ -14,8 +14,6 @@ import { Reports } from './Reports';
 import { Settings } from './Settings';
 import { ShiftManager } from './ShiftManager';
 import { Staff } from './Staff';
-import { SuperAdmin } from './SuperAdmin';
-
 export function Dashboard() {
   const { profile, effectiveProfile } = useAuth();
   const currentProfile = effectiveProfile || profile;
@@ -28,11 +26,6 @@ export function Dashboard() {
 
   useEffect(() => {
     const nextDefault = getDefaultTab(currentProfile, business);
-    if (canAccessSuperAdmin(currentProfile) && activeTab !== 'super-admin') {
-      setActiveTab('super-admin');
-      return;
-    }
-
     if (!allowedTabs.includes(activeTab as any)) {
       setActiveTab(nextDefault);
     }
@@ -60,8 +53,7 @@ export function Dashboard() {
         return <Settings />;
       case 'shifts':
         return <ShiftManager />;
-      case 'super-admin':
-        return <SuperAdmin />;
+
       default:
         return <Analytics />;
     }

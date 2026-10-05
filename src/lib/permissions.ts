@@ -1,5 +1,5 @@
-import { Business, BusinessType, UserProfile, UserRole } from '../types';
-import { BUSINESS_CONFIGS, BusinessConfig, getBusinessConfig } from './businessConfig';
+import { Business, UserProfile, UserRole } from '../types';
+import { BAKERY_CONFIG } from './businessConfig';
 
 export type AppTab =
   | 'dashboard'
@@ -11,8 +11,7 @@ export type AppTab =
   | 'debts'
   | 'staff'
   | 'reports'
-  | 'settings'
-  | 'super-admin';
+  | 'settings';
 
 const ROLE_TABS: Record<UserRole, AppTab[]> = {
   owner: ['dashboard', 'pos', 'history', 'kitchen', 'shifts', 'inventory', 'debts', 'staff', 'reports', 'settings'],
@@ -21,61 +20,16 @@ const ROLE_TABS: Record<UserRole, AppTab[]> = {
   waiter: ['pos', 'history'],
   cashier: ['pos', 'history', 'shifts'],
   kitchen: ['kitchen'],
-  super_admin: ['dashboard', 'pos', 'history', 'kitchen', 'shifts', 'inventory', 'debts', 'staff', 'reports', 'settings', 'super-admin'],
+  super_admin: [],
 };
-
-const BUSINESS_TAB_RULES: Record<BusinessType, { remove?: AppTab[]; add?: AppTab[] }> = {
-  restaurant: {},
-  coffee: {},
-  market: { remove: ['kitchen'] },
-  pastry_bakery: { remove: ['kitchen', 'debts'] },
-};
-
-export function normalizeBusinessType(type: string | undefined | null): BusinessType | null {
-  if (!type) return null;
-  if (type === 'bakery' || type === 'pastry') return 'pastry_bakery';
-  if (type in BUSINESS_CONFIGS) return type as BusinessType;
-  return null;
-}
-
-export function resolveBusinessConfig(business?: Business | null): BusinessConfig | null {
-  const type = normalizeBusinessType(business?.type);
-  const base = type ? getBusinessConfig(type) : null;
-  if (!base) return null;
-
-  return {
-    ...base,
-    hasTables: base.hasTables && Boolean(business?.settings?.hasTables ?? base.hasTables),
-    hasBarcodes: base.hasBarcodes && Boolean(business?.settings?.useBarcodes ?? base.hasBarcodes),
-  };
-}
-
-export function canAccessSuperAdmin(profile: UserProfile | null): boolean {
-  return profile?.email?.toLowerCase() === 'muhamedsuleyman97@gmail.com' || profile?.role === 'super_admin';
-}
 
 export function getAllowedTabs(profile: UserProfile | null, business?: Business | null): AppTab[] {
   if (!profile) return [];
 
   const allowed = new Set(ROLE_TABS[profile.role] || []);
-  const normalizedType = normalizeBusinessType(business?.type);
-  const config = resolveBusinessConfig(business);
 
-  if (normalizedType) {
-    for (const tab of BUSINESS_TAB_RULES[normalizedType].remove || []) {
-      allowed.delete(tab);
-    }
-    for (const tab of BUSINESS_TAB_RULES[normalizedType].add || []) {
-      allowed.add(tab);
-    }
-  }
-
-  if (!config?.hasKitchenDisplay) {
+  if (!BAKERY_CONFIG.hasKitchenDisplay) {
     allowed.delete('kitchen');
-  }
-
-  if (!config?.hasTables && profile.role === 'waiter') {
-    allowed.delete('dashboard');
   }
 
   if (profile.role === 'cashier' || profile.role === 'waiter') {
@@ -86,7 +40,7 @@ export function getAllowedTabs(profile: UserProfile | null, business?: Business 
     allowed.delete('debts');
   }
 
-  if (profile.role === 'waiter' && config?.hasKitchenDisplay) {
+  if (profile.role === 'waiter' && BAKERY_CONFIG.hasKitchenDisplay) {
     allowed.delete('kitchen');
   }
 
@@ -94,26 +48,18 @@ export function getAllowedTabs(profile: UserProfile | null, business?: Business 
     allowed.delete('debts');
   }
 
-  if (!canAccessSuperAdmin(profile)) {
-    allowed.delete('super-admin');
-  }
-
   return Array.from(allowed);
 }
 
 export function getDefaultTab(profile: UserProfile | null, business?: Business | null): AppTab {
   const allowed = getAllowedTabs(profile, business);
-  const config = resolveBusinessConfig(business);
 
-  if (canAccessSuperAdmin(profile) && allowed.includes('super-admin')) return 'super-admin';
   if (profile?.role === 'kitchen' && allowed.includes('kitchen')) return 'kitchen';
-  if (profile?.role === 'waiter' && allowed.includes('pos')) return 'pos';
   if (profile?.role === 'cashier' && allowed.includes('pos')) return 'pos';
   if ((profile?.role === 'owner' || profile?.role === 'manager') && allowed.includes('dashboard')) return 'dashboard';
-  if (config?.posDefaultView === 'tables' && allowed.includes('pos')) return 'pos';
-  return allowed[0] || 'dashboard';
+  return allowed[0] || 'pos';
 }
 
 export function isShopBlocked(business?: Business | null): boolean {
-  return business?.accessStatus === 'blocked';
+  return false; // Local builds never get blocked
 }

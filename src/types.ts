@@ -1,7 +1,28 @@
+declare global {
+  interface Window {
+    electron: {
+      isElectron: boolean;
+      minimize: () => void;
+      maximize: () => void;
+      close: () => void;
+      toggleFullscreen: () => void;
+      saveAutoBackup: (backupJson: string) => Promise<{success: boolean; path?: string; lastSaved?: string; error?: string}>;
+      getBackupInfo: () => Promise<{exists: boolean; path: string|null; lastSaved: string|null; folder?: string}>;
+      openBackupFolder: () => Promise<boolean>;
+      onUpdateAvailable: (callback: (info: any) => void) => void;
+      onUpdateDownloaded: (callback: (info: any) => void) => void;
+      onUpdateError: (callback: (error: string) => void) => void;
+      installUpdate: () => void;
+      checkForUpdates: () => void;
+      downloadUpdate: () => void;
+    };
+  }
+}
+
 export type UserRole = 'owner' | 'manager' | 'cashier' | 'waiter' | 'kitchen' | 'admin' | 'super_admin';
 export type BusinessAccessStatus = 'pending' | 'approved' | 'blocked';
 export type ShiftStatus = 'open' | 'closed';
-export type TransactionType = 'sale' | 'debt_payment' | 'drawer_adjustment';
+export type TransactionType = 'sale' | 'debt_payment' | 'drawer_adjustment' | 'cash_in' | 'cash_out';
 export type BusinessType = 'market' | 'coffee' | 'pastry_bakery' | 'restaurant';
 
 export interface UserProfile {
@@ -124,16 +145,26 @@ export interface Transaction {
   orderId?: string;
   amount: number;
   netAmount?: number;
-  paymentMethod: 'cash' | 'card' | 'debt';
-  taxAmount: number;
+  paymentMethod: 'cash' | 'card' | 'debt' | 'other';
+  taxAmount?: number;
   businessId: string;
   customerId?: string; // If it's a debt
   createdBy?: string;
   createdByName?: string;
   shiftId?: string | null;
-  type?: TransactionType;
+  type?: TransactionType | 'refund';
+  notes?: string;
   isSplit?: boolean;
   isRefund?: boolean;
+  createdAt: any;
+}
+
+export interface ParkedOrder {
+  id: string;
+  businessId: string;
+  items: OrderItem[];
+  customerId?: string;
+  createdBy: string;
   createdAt: any;
 }
 
@@ -148,6 +179,13 @@ export interface CashShift {
   expectedCash?: number;
   declaredCash?: number;
   variance?: number;
+  totalCashSales?: number;
+  totalCardSales?: number;
+  totalCashIn?: number;
+  totalCashOut?: number;
+  totalOrders?: number;
+  totalRevenue?: number;
+  notes?: string;
   closedAt?: any;
   closedBy?: string;
 }

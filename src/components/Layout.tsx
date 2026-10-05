@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { auth, db as rawDb } from '../firebase';
+import { useI18n } from '../lib/i18n';
 import { db, useLiveQuery } from '../lib/db';
-import { collection, doc, limit, onSnapshot, query, where } from 'firebase/firestore';
+import { getAllowedTabs } from '../lib/permissions';
 import { Business, CashShift, UserProfile } from '../types';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -25,7 +25,9 @@ import {
   UserCheck,
   KeyRound,
   Delete,
-  Crown
+  Crown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,12 +41,14 @@ interface LayoutProps {
 
 export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
   const { profile, activeStaff, effectiveProfile, setActiveStaff, logout } = useAuth();
+  const { t, language, setLanguage } = useI18n();
   const currentProfile = effectiveProfile || profile;
 
   const [business, setBusiness] = useState<Business | null>(null);
-  const [activeShift, setActiveShift] = useState<CashShift | null>(null);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
   // Selected staff member for PIN entry
   const [selectedStaff, setSelectedStaff] = useState<UserProfile | null>(null);
@@ -56,41 +60,35 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
     [profile?.businessId]
   ) || []) as UserProfile[];
 
-  useEffect(() => {
-    if (!profile?.businessId) {
-      setBusiness(null);
-      setActiveShift(null);
-      return;
+  // Use LiveQuery to fetch business profile
+  useLiveQuery(() => {
+    if (profile?.businessId) {
+      db.businesses.get(profile.businessId).then(b => {
+        setBusiness(b || null);
+      });
     }
+  }, [profile?.businessId]);
 
-    const unsub = onSnapshot(doc(rawDb, 'businesses', profile.businessId), (snap) => {
-      if (snap.exists()) setBusiness({ id: snap.id, ...snap.data() } as Business);
-    });
-
-    const unsubShift = onSnapshot(
-      query(collection(rawDb, `businesses/${profile.businessId}/cashShifts`), where('status', '==', 'open'), limit(1)),
-      (snap) => {
-        setActiveShift(snap.empty ? null : ({ id: snap.docs[0].id, ...snap.docs[0].data() } as CashShift));
-      }
-    );
-
-    return () => {
-      unsub();
-      unsubShift();
-    };
+  const activeShift = useLiveQuery(async () => {
+    if (!profile?.businessId) return null;
+    const openShifts = await db.shifts.where('businessId').equals(profile.businessId).toArray();
+    const active = openShifts
+      .filter((s) => s.status === 'open')
+      .sort((a, b) => new Date(b.openedAt || 0).getTime() - new Date(a.openedAt || 0).getTime())[0];
+    return active || null;
   }, [profile?.businessId]);
 
   const baseMenuItems = [
-    { id: 'dashboard', label: 'Dashboard / Преглед', icon: LayoutDashboard, roles: ['owner', 'admin', 'manager'] },
-    { id: 'pos', label: 'Point of Sale / Каса', icon: ShoppingCart, roles: ['owner', 'waiter', 'cashier', 'admin', 'manager'] },
-    { id: 'history', label: 'Order History / Историја', icon: History, roles: ['owner', 'waiter', 'cashier', 'admin', 'manager'] },
-    { id: 'kitchen', label: 'Kitchen / Кујна', icon: Utensils, roles: ['owner', 'kitchen', 'admin', 'manager'], types: ['coffee', 'restaurant', 'bakery', 'pastry'] },
-    { id: 'shifts', label: 'Shifts / Смени', icon: TrendingUp, roles: ['owner', 'cashier', 'admin', 'manager'] },
-    { id: 'inventory', label: 'Inventory / Залиха', icon: Package, roles: ['owner', 'admin', 'manager'] },
-    { id: 'debts', label: 'Veresija / Долгови', icon: Users, roles: ['owner', 'admin', 'manager'] },
-    { id: 'staff', label: 'Staff / Персонал', icon: Users, roles: ['owner', 'admin'] },
-    { id: 'reports', label: 'Reports / Извештаи', icon: TrendingUp, roles: ['owner', 'admin', 'manager'] },
-    { id: 'settings', label: 'Settings / Подесувања', icon: Settings, roles: ['owner', 'admin'] },
+    { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard, roles: ['owner', 'admin', 'manager'] },
+    { id: 'pos', label: t('nav.pos'), icon: ShoppingCart, roles: ['owner', 'waiter', 'cashier', 'admin', 'manager'] },
+    { id: 'history', label: t('nav.orders'), icon: History, roles: ['owner', 'waiter', 'cashier', 'admin', 'manager'] },
+    { id: 'kitchen', label: t('nav.kitchen'), icon: Utensils, roles: ['owner', 'kitchen', 'admin', 'manager'], types: ['coffee', 'restaurant', 'bakery', 'pastry'] },
+    { id: 'shifts', label: t('nav.shifts'), icon: TrendingUp, roles: ['owner', 'cashier', 'admin', 'manager'] },
+    { id: 'inventory', label: t('nav.inventory'), icon: Package, roles: ['owner', 'admin', 'manager'] },
+    { id: 'debts', label: t('nav.customers'), icon: Users, roles: ['owner', 'admin', 'manager'] },
+    { id: 'staff', label: t('nav.staff'), icon: Users, roles: ['owner', 'admin'] },
+    { id: 'reports', label: t('nav.reports'), icon: TrendingUp, roles: ['owner', 'admin', 'manager'] },
+    { id: 'settings', label: t('nav.settings'), icon: Settings, roles: ['owner', 'admin'] },
   ];
 
   const isSuperAdmin = profile?.email === 'muhamedsuleyman97@gmail.com' || profile?.role === 'super_admin';
@@ -99,11 +97,9 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
     ? [...baseMenuItems, { id: 'super-admin', label: 'Super Admin / Платформа', icon: ShieldCheck, roles: ['owner', 'admin', 'super_admin'] }]
     : baseMenuItems;
 
-  const filteredMenu = menuItems.filter(item => {
-    const roleMatch = item.roles.includes(currentProfile?.role || '');
-    const typeMatch = !item.types || (business && item.types.includes(business.type));
-    return roleMatch && typeMatch;
-  });
+  const allowedTabs = getAllowedTabs(currentProfile, business);
+
+  const filteredMenu = menuItems.filter(item => allowedTabs.includes(item.id as any));
 
   const handleSelectStaffMember = (staff: UserProfile) => {
     if (!staff.pin) {
@@ -121,15 +117,20 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
 
   const handlePinDigit = (digit: string) => {
     if (!selectedStaff) return;
-    if (enteredPin.length >= 4) return;
+    const targetLength = selectedStaff.pin?.length || 4;
+    if (enteredPin.length >= targetLength) return;
 
     const nextPin = enteredPin + digit;
     setEnteredPin(nextPin);
     setPinError(false);
 
-    if (nextPin.length === 4) {
+    if (nextPin.length === targetLength) {
       if (nextPin === selectedStaff.pin) {
-        setActiveStaff(selectedStaff);
+        if (selectedStaff.uid === profile?.uid) {
+          setActiveStaff(null);
+        } else {
+          setActiveStaff(selectedStaff);
+        }
         setIsStaffModalOpen(false);
         setSelectedStaff(null);
         setEnteredPin('');
@@ -143,26 +144,45 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
   };
 
   const handleSwitchToOwner = () => {
-    setActiveStaff(null);
-    setIsStaffModalOpen(false);
-    setSelectedStaff(null);
-    setEnteredPin('');
-    toast.success(`Active operator: ${profile?.name || 'Store Owner'}`);
+    if (profile?.pin) {
+      setSelectedStaff(profile);
+      setEnteredPin('');
+      setPinError(false);
+    } else {
+      setActiveStaff(null);
+      setIsStaffModalOpen(false);
+      setSelectedStaff(null);
+      setEnteredPin('');
+      toast.success(`Active operator: ${profile?.name || 'Store Owner'}`);
+    }
   };
 
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      <div className="p-6 border-b border-zinc-100">
-        <h1 className="text-xl font-bold tracking-tight text-zinc-900">easyPOS MK</h1>
-        <div className="flex items-center gap-2 mt-1">
-          <Badge variant="outline" className="text-[10px] uppercase font-bold px-2 py-0.5 border-zinc-200 text-zinc-700 bg-zinc-50">
-            {currentProfile?.role}
-          </Badge>
-          <span className="text-xs text-zinc-400 font-medium truncate">{business?.name || 'POS'}</span>
-        </div>
+  const SidebarContent = ({ isCollapsed = false }: { isCollapsed?: boolean }) => (
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className={cn("p-4 border-b border-zinc-100 flex items-center shrink-0 h-[88px]", isCollapsed ? "justify-center" : "gap-3")}>
+        {!isCollapsed ? (
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-12 w-12 rounded-2xl bg-white border border-zinc-200/80 p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+              <img src="./logo.png" alt="ZEZ-POS" className="h-full w-full object-contain" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-lg font-black tracking-tight text-zinc-900 truncate">ZEZ-POS</h1>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <Badge variant="outline" className="text-[9px] uppercase font-bold px-1.5 py-0.5 border-zinc-200 text-zinc-700 bg-zinc-50 shrink-0">
+                  {currentProfile?.role}
+                </Badge>
+                <span className="text-xs text-zinc-400 font-medium truncate">{business?.name || 'ZEZ Bakery'}</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="h-11 w-11 rounded-2xl bg-white border border-zinc-200/80 p-1 flex items-center justify-center shadow-sm overflow-hidden" title="ZEZ-POS">
+            <img src="./logo.png" alt="ZEZ" className="h-full w-full object-contain" />
+          </div>
+        )}
       </div>
       
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto overflow-x-hidden">
         {filteredMenu.map((item) => (
           <button
             key={item.id}
@@ -170,65 +190,77 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
               setActiveTab(item.id);
               setIsMobileMenuOpen(false);
             }}
+            title={isCollapsed ? item.label : undefined}
             className={cn(
-              "flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200",
+              "flex items-center w-full py-3.5 text-sm font-medium rounded-2xl transition-all duration-200 group relative",
+              isCollapsed ? "justify-center px-0" : "px-4",
               activeTab === item.id 
-                ? "bg-zinc-900 text-white shadow-md font-semibold" 
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 font-bold tracking-wide" 
                 : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
             )}
           >
-            <item.icon className={cn("mr-3 h-5 w-5", activeTab === item.id ? "text-white" : "text-zinc-400")} />
-            {item.label}
+            <item.icon className={cn("h-5 w-5 transition-transform duration-200 shrink-0", !isCollapsed && "mr-3 group-hover:scale-110", activeTab === item.id ? "text-white" : "text-zinc-400")} />
+            {!isCollapsed && <span className="truncate">{item.label}</span>}
           </button>
         ))}
       </nav>
 
-      <div className="p-4 border-t border-zinc-100 space-y-2">
+      <div className="p-4 border-t border-zinc-100 space-y-2 shrink-0">
         <Button 
           variant="outline"
-          className="w-full justify-start text-xs font-semibold rounded-xl border-zinc-200 hover:bg-zinc-100"
+          title={isCollapsed ? t('nav.switchUser') : undefined}
+          className={cn("w-full text-xs font-semibold rounded-xl border-zinc-200 hover:bg-zinc-100", isCollapsed ? "justify-center px-0" : "justify-start")}
           onClick={() => setIsStaffModalOpen(true)}
         >
-          <KeyRound className="mr-2 h-4 w-4 text-zinc-500" />
-          Switch Staff / PIN
+          <KeyRound className={cn("h-4 w-4 text-zinc-500 shrink-0", !isCollapsed && "mr-2")} />
+          {!isCollapsed && <span>{t('nav.switchUser')}</span>}
         </Button>
         <Button 
           variant="ghost" 
-          className="w-full justify-start text-xs text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-xl"
+          title={isCollapsed ? t('nav.logout') : undefined}
+          className={cn("w-full text-xs text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-xl", isCollapsed ? "justify-center px-0" : "justify-start")}
           onClick={logout}
         >
-          <LogOut className="mr-2 h-4 w-4" />
-          Sign Out Store
+          <LogOut className={cn("h-4 w-4 shrink-0", !isCollapsed && "mr-2")} />
+          {!isCollapsed && <span>{t('nav.logout')}</span>}
         </Button>
       </div>
     </div>
   );
 
   return (
-    <div className="flex h-screen bg-zinc-50 overflow-hidden">
+    <div className="flex h-screen bg-zinc-50/50 overflow-hidden font-sans">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 bg-white border-r border-zinc-200 flex-col">
-        <SidebarContent />
+      <aside className={cn("hidden lg:flex bg-white border-r border-zinc-200/60 flex-col shadow-sm z-20 transition-all duration-300 relative shrink-0", isSidebarCollapsed ? "w-[88px]" : "w-[260px]")}>
+        <SidebarContent isCollapsed={isSidebarCollapsed} />
+        <button 
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="absolute -right-3 top-[32px] bg-white border border-zinc-200 shadow-sm rounded-full p-1 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 transition-colors z-50 flex items-center justify-center h-6 w-6"
+        >
+          {isSidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 bg-white border-b border-zinc-200 flex items-center justify-between px-4 lg:px-8 shrink-0">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-zinc-200/60 flex items-center justify-between px-4 lg:px-8 shrink-0 z-10">
           <div className="flex items-center gap-4">
             {/* Mobile Menu Trigger */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger render={
-                <Button variant="ghost" size="icon" className="lg:hidden">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              } />
+              <SheetTrigger
+                render={
+                  <Button variant="ghost" size="icon" className="lg:hidden">
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                }
+              />
               <SheetContent side="left" className="p-0 w-72">
                 <SidebarContent />
               </SheetContent>
             </Sheet>
 
             <h2 className="text-lg font-bold text-zinc-900 capitalize hidden sm:block">
-              {activeTab.replace('-', ' ')}
+              {menuItems.find(i => i.id === activeTab)?.label || activeTab}
             </h2>
             <div className="hidden sm:block h-4 w-[1px] bg-zinc-200" />
             <div className="flex items-center gap-2">
@@ -241,7 +273,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
                     : "bg-zinc-100 text-zinc-600 border-zinc-200"
                 )}
               >
-                {activeShift ? 'Shift Open' : 'Shift Closed'}
+                {activeShift ? t('nav.shiftOpen') : t('nav.shiftClosed')}
               </Badge>
               <div className="hidden md:flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold text-zinc-400">
                 <Printer className="h-3 w-3" />
@@ -250,12 +282,44 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
             </div>
           </div>
 
-          {/* Quick Staff Switcher Button */}
           <div className="flex items-center gap-3">
+            {/* Language Switcher Pill */}
+            <div className="flex items-center bg-zinc-100/90 p-1 rounded-2xl border border-zinc-200/80 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setLanguage('mk')}
+                className={cn(
+                  "px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1",
+                  language === 'mk' 
+                    ? "bg-white text-zinc-900 shadow-sm" 
+                    : "text-zinc-500 hover:text-zinc-800"
+                )}
+                title="Македонски"
+              >
+                <span>🇲🇰</span>
+                <span>МК</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('en')}
+                className={cn(
+                  "px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1",
+                  language === 'en' 
+                    ? "bg-white text-zinc-900 shadow-sm" 
+                    : "text-zinc-500 hover:text-zinc-800"
+                )}
+                title="English"
+              >
+                <span>🇬🇧</span>
+                <span>EN</span>
+              </button>
+            </div>
+
+            {/* Quick Staff Switcher Button */}
             <button
               onClick={() => setIsStaffModalOpen(true)}
               className="flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-zinc-100 hover:bg-zinc-200 transition-all border border-zinc-200/80 text-left cursor-pointer group"
-              title="Click to switch staff operator"
+              title={t('nav.switchUser')}
             >
               <div className="h-8 w-8 rounded-xl bg-zinc-900 group-hover:bg-zinc-800 text-white flex items-center justify-center font-bold text-xs shadow-sm">
                 {currentProfile?.name?.charAt(0) || 'U'}
@@ -267,14 +331,16 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
                     {currentProfile?.role}
                   </Badge>
                 </div>
-                <span className="text-[10px] text-zinc-500 font-medium">Switch PIN ▾</span>
+                <span className="text-[10px] text-zinc-500 font-medium">{t('nav.switchUser')} ▾</span>
               </div>
             </button>
           </div>
         </header>
         
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8">
-          {children}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
+          <div className="p-4 lg:p-8 min-h-full">
+            {children}
+          </div>
         </div>
       </main>
 
@@ -303,10 +369,10 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
               <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-black text-zinc-900">
-                    {selectedStaff ? `Unlock ${selectedStaff.name}` : 'Switch Staff Operator'}
+                    {selectedStaff ? `${selectedStaff.name}` : t('nav.selectStaff')}
                   </h3>
                   <p className="text-xs text-zinc-500 mt-0.5">
-                    {selectedStaff ? 'Enter 4-digit staff PIN' : 'Select an operator or cashier for this shift'}
+                    {selectedStaff ? t('nav.enterPin') : t('nav.switchUser')}
                   </p>
                 </div>
                 <button
@@ -403,7 +469,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
                   <div className="space-y-5">
                     <div className="text-center">
                       <div className="flex justify-center gap-3 mb-2">
-                        {[0, 1, 2, 3].map(index => (
+                        {[...Array(selectedStaff.pin?.length || 4)].map((_, index) => (
                           <div
                             key={index}
                             className={cn(
@@ -417,7 +483,9 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
                           />
                         ))}
                       </div>
-                      <p className="text-xs text-zinc-400">Enter PIN for {selectedStaff.name}</p>
+                      <p className="text-xs text-zinc-400 font-medium">
+                        {language === 'mk' ? `Внесете ПИН за ${selectedStaff.name}` : `Enter PIN for ${selectedStaff.name}`}
+                      </p>
                     </div>
 
                     {/* Numeric Keypad */}
@@ -458,7 +526,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
                       }}
                       className="w-full text-xs text-zinc-500 hover:text-zinc-800 text-center py-2"
                     >
-                      ← Back to staff list
+                      ← {t('common.back')}
                     </button>
                   </div>
                 )}

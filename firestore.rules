@@ -64,6 +64,7 @@ service cloud.firestore {
     function businessIsApproved(businessId) {
       return businessExists(businessId) &&
         (
+          !('accessStatus' in businessData(businessId)) ||
           !(businessData(businessId).accessStatus is string) ||
           businessData(businessId).accessStatus == 'approved'
         );

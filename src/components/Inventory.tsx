@@ -26,8 +26,11 @@ function NativeSelect({ value, onChange, options, placeholder }: { value: string
   );
 }
 
+import { useI18n } from '../lib/i18n';
+
 export function Inventory() {
   const { profile } = useAuth();
+  const { t } = useI18n();
   const products = (useLiveQuery(
     () => (profile?.businessId ? db.products.where('businessId').equals(profile.businessId).toArray() : []),
     [profile?.businessId]
@@ -62,7 +65,6 @@ export function Inventory() {
     setStock('0');
     setUnit('piece');
     setTaxRate('18');
-    setTaxGroup('A');
     setBarcode('');
     setModifiers('');
   };
@@ -117,7 +119,6 @@ export function Inventory() {
     setCategoryId(product.categoryId);
     setStock(String(product.stockQuantity));
     setUnit(product.unit);
-    setTaxRate(String(product.taxRate || 18));
     setTaxGroup(product.taxGroup || 'A');
     setBarcode(product.barcode || '');
     setModifiers(product.modifiers?.join(', ') || '');
@@ -170,17 +171,17 @@ export function Inventory() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-black text-zinc-900 tracking-tight">Inventory</h2>
-          <p className="text-sm text-zinc-500 mt-0.5">{products.length} products • {categories.length} categories</p>
+          <h2 className="text-3xl font-black text-zinc-900 tracking-tight">{t('inventory.title')}</h2>
+          <p className="text-sm font-semibold text-zinc-500 mt-1 uppercase tracking-widest">{t('inventory.subtitle')}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="rounded-xl border-zinc-200 gap-2" onClick={() => setIsCatOpen(true)}>
+        <div className="flex gap-3">
+          <Button variant="outline" className="rounded-2xl border-zinc-200 gap-2 h-11 px-5 shadow-sm hover:bg-zinc-50 transition-colors" onClick={() => setIsCatOpen(true)}>
             <Layers className="h-4 w-4" />
-            Categories
+            <span className="font-bold">{t('inventory.categories')}</span>
           </Button>
-          <Button className="bg-zinc-900 hover:bg-zinc-800 rounded-xl gap-2" onClick={() => { resetForm(); setEditingProduct(null); setIsAddOpen(true); }}>
-            <Plus className="h-4 w-4" />
-            Add Product
+          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20 rounded-2xl gap-2 h-11 px-5 transition-all" onClick={() => { resetForm(); setEditingProduct(null); setIsAddOpen(true); }}>
+            <Plus className="h-5 w-5" />
+            <span className="font-bold">{t('inventory.addProduct')}</span>
           </Button>
         </div>
       </div>
@@ -192,34 +193,34 @@ export function Inventory() {
         </motion.div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-          <Input placeholder="Search products..." className="pl-10 rounded-xl border-zinc-200 h-11" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400" />
+          <Input placeholder="Search products..." className="pl-12 rounded-2xl border-zinc-200/60 bg-white h-12 shadow-sm font-medium" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
         <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setSelectedCategory(null)} className={cn('px-4 h-11 rounded-full text-sm font-semibold border transition-all', selectedCategory === null ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400')}>
+          <button onClick={() => setSelectedCategory(null)} className={cn('px-5 h-12 rounded-2xl text-sm font-bold border transition-all active:scale-[0.98]', selectedCategory === null ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20' : 'bg-white text-zinc-600 border-zinc-200/60 hover:border-zinc-300 shadow-sm')}>
             All ({products.length})
           </button>
           {categories.map((category) => (
-            <button key={category.id} onClick={() => setSelectedCategory(category.id)} className={cn('px-4 h-11 rounded-full text-sm font-semibold border transition-all', selectedCategory === category.id ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400')}>
+            <button key={category.id} onClick={() => setSelectedCategory(category.id)} className={cn('px-5 h-12 rounded-2xl text-sm font-bold border transition-all active:scale-[0.98]', selectedCategory === category.id ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20' : 'bg-white text-zinc-600 border-zinc-200/60 hover:border-zinc-300 shadow-sm')}>
               {category.name} ({products.filter((product) => product.categoryId === category.id).length})
             </button>
           ))}
         </div>
       </div>
 
-      <div className="bg-white border border-zinc-100 rounded-3xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-zinc-200/60 rounded-3xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-zinc-50/80 hover:bg-zinc-50">
-                <TableHead className="w-[280px] font-bold text-zinc-700">Product</TableHead>
-                <TableHead className="font-bold text-zinc-700">Category</TableHead>
-                <TableHead className="font-bold text-zinc-700">Price</TableHead>
-                <TableHead className="font-bold text-zinc-700">Stock</TableHead>
-                <TableHead className="font-bold text-zinc-700">Tax</TableHead>
-                <TableHead className="text-right font-bold text-zinc-700">Actions</TableHead>
+                <TableHead className="w-[280px] font-bold text-zinc-700">{t('inventory.productName')}</TableHead>
+                <TableHead className="font-bold text-zinc-700">{t('common.category')}</TableHead>
+                <TableHead className="font-bold text-zinc-700">{t('common.price')}</TableHead>
+                <TableHead className="font-bold text-zinc-700">{t('inventory.stock')}</TableHead>
+                <TableHead className="font-bold text-zinc-700">{t('inventory.taxGroup')}</TableHead>
+                <TableHead className="text-right font-bold text-zinc-700">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -227,24 +228,24 @@ export function Inventory() {
                 {filteredProducts.map((product) => (
                   <TableRow key={product.id} className="hover:bg-zinc-50/50">
                     <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-zinc-100 flex items-center justify-center shrink-0">
-                          <Package className="h-4 w-4 text-zinc-400" />
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-2xl bg-indigo-50 flex items-center justify-center shrink-0">
+                          <Package className="h-5 w-5 text-indigo-600" />
                         </div>
                         <div>
-                          <p className="font-semibold text-zinc-900">{product.name}</p>
-                          {product.barcode && <p className="text-xs text-zinc-400 font-mono">{product.barcode}</p>}
+                          <p className="font-bold text-zinc-900">{product.name}</p>
+                          {product.barcode && <p className="text-xs text-zinc-400 font-mono mt-0.5">{product.barcode}</p>}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="rounded-full border-zinc-200 text-zinc-600 font-medium">
+                      <Badge variant="outline" className="rounded-xl border-zinc-200 text-zinc-600 font-semibold py-1">
                         {categories.find((category) => category.id === product.categoryId)?.name || 'Uncategorized'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-bold text-zinc-900">{formatMKD(product.price)}</TableCell>
+                    <TableCell className="font-black text-zinc-900 text-base">{formatMKD(product.price)}</TableCell>
                     <TableCell>
-                      <span className={cn('font-bold text-sm', product.stockQuantity < 10 ? 'text-red-600' : product.stockQuantity < 30 ? 'text-amber-600' : 'text-emerald-600')}>
+                      <span className={cn('font-black text-sm px-3 py-1 rounded-full', product.stockQuantity < 10 ? 'bg-red-50 text-red-700' : product.stockQuantity < 30 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700')}>
                         {product.stockQuantity} {product.unit}
                       </span>
                     </TableCell>
@@ -297,35 +298,35 @@ export function Inventory() {
 
               <form onSubmit={handleAddProduct} className="p-6 space-y-5">
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold text-zinc-700">Product Name *</Label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. Espresso, Margherita Pizza..." className="rounded-xl border-zinc-200 h-11" />
+                  <Label className="text-sm font-semibold text-zinc-700">{t('inventory.productName')} *</Label>
+                  <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. Burek, Leb..." className="rounded-xl border-zinc-200 h-11" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-semibold text-zinc-700">Category *</Label>
-                    <NativeSelect value={categoryId} onChange={setCategoryId} placeholder="-- Select category --" options={categories.map((category) => ({ id: category.id, name: category.name }))} />
+                    <Label className="text-sm font-semibold text-zinc-700">{t('common.category')} *</Label>
+                    <NativeSelect value={categoryId} onChange={setCategoryId} placeholder={`-- ${t('common.category')} --`} options={categories.map((category) => ({ id: category.id, name: category.name }))} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-semibold text-zinc-700">Unit</Label>
-                    <NativeSelect value={unit} onChange={(value) => setUnit(value as 'piece' | 'kg' | 'liter')} options={[{ id: 'piece', name: 'Piece' }, { id: 'kg', name: 'Kilogram' }, { id: 'liter', name: 'Liter' }]} />
+                    <Label className="text-sm font-semibold text-zinc-700">{t('inventory.unit')}</Label>
+                    <NativeSelect value={unit} onChange={(value) => setUnit(value as 'piece' | 'kg' | 'liter')} options={[{ id: 'piece', name: t('inventory.unitPiece') }, { id: 'kg', name: t('inventory.unitKg') }, { id: 'liter', name: t('inventory.unitLiter') }]} />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-semibold text-zinc-700">Price *</Label>
+                    <Label className="text-sm font-semibold text-zinc-700">{t('common.price')} * (MKD)</Label>
                     <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} required min="0" step="1" placeholder="0" className="rounded-xl border-zinc-200 h-11" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-semibold text-zinc-700">Stock Quantity *</Label>
+                    <Label className="text-sm font-semibold text-zinc-700">{t('inventory.stock')} *</Label>
                     <Input type="number" value={stock} onChange={(e) => setStock(e.target.value)} required min="0" placeholder="0" className="rounded-xl border-zinc-200 h-11" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-semibold text-zinc-700">Tax Group</Label>
+                    <Label className="text-sm font-semibold text-zinc-700">{t('inventory.taxGroup')}</Label>
                     <NativeSelect value={taxGroup} onChange={(value) => {
                       setTaxGroup(value as 'A' | 'B' | 'V' | 'G');
                       if (value === 'A') setTaxRate('18');
@@ -335,23 +336,23 @@ export function Inventory() {
                     }} options={[{ id: 'A', name: 'A - 18%' }, { id: 'B', name: 'B - 5%' }, { id: 'G', name: 'G - 10%' }, { id: 'V', name: 'V - 0%' }]} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-semibold text-zinc-700">Tax Rate (%)</Label>
+                    <Label className="text-sm font-semibold text-zinc-700">{t('inventory.taxRate')} (%)</Label>
                     <Input type="number" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} required min="0" max="100" className="rounded-xl border-zinc-200 h-11" />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold text-zinc-700">Barcode (optional)</Label>
-                  <Input value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="Scan or type barcode..." className="rounded-xl border-zinc-200 h-11 font-mono" />
+                  <Label className="text-sm font-semibold text-zinc-700">{t('inventory.barcode')}</Label>
+                  <Input value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="Scan barcode..." className="rounded-xl border-zinc-200 h-11 font-mono" />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold text-zinc-700">Modifiers</Label>
-                  <Input value={modifiers} onChange={(e) => setModifiers(e.target.value)} placeholder="Extra Shot, Oat Milk, No Sugar" className="rounded-xl border-zinc-200 h-11" />
+                  <Label className="text-sm font-semibold text-zinc-700">{t('inventory.modifiers')}</Label>
+                  <Input value={modifiers} onChange={(e) => setModifiers(e.target.value)} placeholder="Extra, No salt..." className="rounded-xl border-zinc-200 h-11" />
                 </div>
 
                 <Button type="submit" className="w-full h-12 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold" disabled={loading}>
-                  {loading ? 'Saving...' : editingProduct ? 'Update Product' : 'Add Product'}
+                  {loading ? t('common.saving') : editingProduct ? t('inventory.editProduct') : t('inventory.addProduct')}
                 </Button>
               </form>
             </motion.div>

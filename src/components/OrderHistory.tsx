@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Banknote, CreditCard, Eye, History, Printer, RotateCcw, Search, User, X } from 'lucide-react';
+import { Banknote, CreditCard, Eye, FileText, History, Printer, RotateCcw, Search, User, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { db, useLiveQuery } from '../lib/db';
 import { useAuth } from '../hooks/useAuth';
 import { Order, Shift, Transaction, UserProfile } from '../types';
 import { formatMKD } from '../lib/money';
 import { cn } from '../lib/utils';
+import { fiscalService } from '../services/fiscalService';
 import { ReceiptModal } from './ReceiptModal';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -53,7 +54,8 @@ const getCutoffDate = (dateFilter: string) => {
 };
 
 export function OrderHistory() {
-  const { profile } = useAuth();
+  const { profile, effectiveProfile } = useAuth();
+  const currentProfile = effectiveProfile || profile;
   const business = useLiveQuery(() => (profile?.businessId ? db.businesses.get(profile.businessId) : undefined), [profile?.businessId]) || null;
   const transactions = (useLiveQuery<Transaction[]>(
     () => (profile?.businessId ? db.transactions.where('businessId').equals(profile.businessId).toArray() : []),
@@ -126,31 +128,57 @@ export function OrderHistory() {
 
   const handleRefund = async (transaction: Transaction) => {
     if (!profile?.businessId) return;
+    const activeShift = [...shifts]
+      .filter((s) => s.status === 'open')
+      .sort((a, b) => new Date(b.openedAt || 0).getTime() - new Date(a.openedAt || 0).getTime())[0];
+    if (!activeShift && transaction.paymentMethod === 'cash') {
+      toast.error('Cannot process cash refund without an open shift');
+      return;
+    }
+    
     setIsRefunding(true);
     try {
       await db.transactions.add({
         id: `refund-${Date.now()}`,
         orderId: transaction.orderId,
-        amount: -Math.abs(transaction.amount),
-        netAmount: -Math.abs(transaction.netAmount || transaction.amount || 0),
+        amount: -Math.abs(Number(transaction.amount)),
+        netAmount: -Math.abs(Number(transaction.netAmount || transaction.amount || 0)),
         paymentMethod: transaction.paymentMethod,
-        taxAmount: -Math.abs(transaction.taxAmount || 0),
+        taxAmount: -Math.abs(Number(transaction.taxAmount || 0)),
         businessId: profile.businessId,
-        createdBy: profile.uid,
-        createdByName: profile.name,
-        shiftId: transaction.shiftId || null,
+        createdBy: currentProfile?.uid || profile.uid,
+        createdByName: currentProfile?.name || profile.name,
+        shiftId: activeShift?.id || null,
         type: 'refund',
         isRefund: true,
         createdAt: new Date().toISOString(),
       });
       if (transaction.orderId) {
         await db.orders.update(transaction.orderId, {
-          status: 'refunded',
+          status: 'cancelled',
           paymentStatus: 'refunded',
           closedAt: new Date().toISOString(),
         });
+
+        // Trigger official Storno fiscal slip on physical Maestral
+        const originalOrder = orders.find((o) => o.id === transaction.orderId);
+        if (originalOrder && transaction.paymentMethod !== 'debt') {
+          await fiscalService.printStorno(originalOrder, transaction.paymentMethod === 'card' ? 'card' : 'cash');
+        }
+
+        // Restock inventory for refunded items
+        if (originalOrder?.items) {
+          for (const item of originalOrder.items) {
+            const prod = await db.products.get(item.productId);
+            if (prod && typeof prod.stockQuantity === 'number') {
+              await db.products.update(item.productId, {
+                stockQuantity: prod.stockQuantity + item.quantity,
+              });
+            }
+          }
+        }
       }
-      toast.success('Refund processed');
+      toast.success('Refund processed & Storno printed on Fiscal Device');
       setRefundConfirm(null);
     } catch (error) {
       console.error('Refund failed:', error);
@@ -164,35 +192,34 @@ export function OrderHistory() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-black text-zinc-900 tracking-tight">Order History</h2>
-          <p className="text-sm text-zinc-500 mt-0.5">{filteredTransactions.length} transactions</p>
+          <h2 className="text-3xl font-black text-zinc-900 tracking-tight">Order History</h2>
+          <p className="text-sm font-semibold text-zinc-500 mt-1 uppercase tracking-widest">{filteredTransactions.length} transactions found</p>
         </div>
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-56">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-            <Input placeholder="Search transaction, order, table..." className="pl-10 rounded-xl border-zinc-200" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+      </div>
+
+      <div className="bg-white p-4 rounded-3xl border border-zinc-200/60 shadow-sm flex flex-col xl:flex-row gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 w-full">
+          <div className="relative lg:col-span-2">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400" />
+            <Input placeholder="Search transaction, order, table..." className="pl-12 rounded-2xl border-zinc-200/60 bg-zinc-50 h-12 font-medium" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
-          <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900">
+          <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="h-12 rounded-2xl border border-zinc-200/60 bg-zinc-50 px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-shadow">
             {DATE_OPTS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
-          <select value={methodFilter} onChange={(e) => setMethodFilter(e.target.value)} className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900">
+          <select value={methodFilter} onChange={(e) => setMethodFilter(e.target.value)} className="h-12 rounded-2xl border border-zinc-200/60 bg-zinc-50 px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-shadow">
             {METHOD_OPTS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
-          <select value={userFilter} onChange={(e) => setUserFilter(e.target.value)} className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900">
+          <select value={userFilter} onChange={(e) => setUserFilter(e.target.value)} className="h-12 rounded-2xl border border-zinc-200/60 bg-zinc-50 px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-shadow">
             <option value="all">All Employees</option>
             {users.map((user) => <option key={user.uid} value={user.uid}>{user.name}</option>)}
-          </select>
-          <select value={shiftFilter} onChange={(e) => setShiftFilter(e.target.value)} className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900">
-            <option value="all">All Shifts</option>
-            {shifts.map((shift) => <option key={shift.id} value={shift.id}>{new Date(shift.openedAt).toLocaleDateString('mk-MK')} • {shift.openedByName || 'Shift'}</option>)}
           </select>
         </div>
       </div>
 
-      <Card className="border-zinc-100 shadow-sm rounded-3xl overflow-hidden">
+      <Card className="border-zinc-200/60 shadow-sm rounded-3xl overflow-hidden bg-white">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-zinc-50/50">
+            <TableHeader className="bg-zinc-50/80">
               <TableRow>
                 <TableHead className="pl-6">ID</TableHead>
                 <TableHead>Date & Time</TableHead>
@@ -204,12 +231,16 @@ export function OrderHistory() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTransactions.map((transaction) => (
-                <TableRow key={transaction.id} className={cn('hover:bg-zinc-50/50 transition-colors', transaction.isRefund && 'bg-red-50/30')}>
-                  <TableCell className="pl-6 font-mono text-xs text-zinc-500">
-                    #{transaction.id.slice(-8).toUpperCase()}
-                    {transaction.isRefund && <Badge className="ml-2 text-[10px] bg-red-100 text-red-600 border-red-100 rounded-full">REFUND</Badge>}
-                  </TableCell>
+              {filteredTransactions.map((transaction) => {
+                const orderStatus = orders.find((o) => o.id === transaction.orderId)?.status;
+                const isOriginalRefunded = !transaction.isRefund && ((orderStatus as string) === 'cancelled' || (orderStatus as string) === 'refunded' || (orderStatus as string) === 'voided');
+                return (
+                  <TableRow key={transaction.id} className={cn('hover:bg-zinc-50/50 transition-colors', transaction.isRefund && 'bg-red-50/30', isOriginalRefunded && 'opacity-60 bg-zinc-50')}>
+                    <TableCell className="pl-6 font-mono text-xs text-zinc-500">
+                      #{transaction.id.slice(-8).toUpperCase()}
+                      {transaction.isRefund && <Badge className="ml-2 text-[10px] bg-red-100 text-red-600 border-red-100 rounded-full">REFUND</Badge>}
+                      {isOriginalRefunded && <Badge className="ml-2 text-[10px] bg-zinc-200 text-zinc-500 border-zinc-200 rounded-full">VOIDED</Badge>}
+                    </TableCell>
                   <TableCell className="text-sm text-zinc-600">
                     {new Date(transaction.createdAt).toLocaleString('mk-MK', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </TableCell>
@@ -226,26 +257,29 @@ export function OrderHistory() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm text-zinc-500">{formatMKD(Math.abs(transaction.taxAmount || 0))}</TableCell>
-                  <TableCell className={cn('text-right font-bold', transaction.isRefund ? 'text-red-600' : 'text-zinc-900')}>
-                    {transaction.isRefund ? '− ' : ''}{formatMKD(Math.abs(transaction.amount || 0))}
+                  <TableCell className="text-right">
+                    <span className={cn("font-black text-base", transaction.amount < 0 ? "text-red-600" : "text-zinc-900")}>
+                      {formatMKD(transaction.amount)}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right pr-6">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-zinc-100" title="View details" onClick={() => handleViewDetails(transaction)}>
-                        <Eye className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-zinc-100 text-zinc-500 transition-colors" title="View Details" onClick={() => handleViewDetails(transaction)}>
+                        <FileText className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-zinc-100" title="Re-print receipt" onClick={() => handlePrintFromHistory(transaction)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-indigo-50 text-indigo-600 transition-colors" title="Print Receipt" onClick={() => handlePrintFromHistory(transaction)}>
                         <Printer className="h-4 w-4" />
                       </Button>
-                      {!transaction.isRefund && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-red-50 hover:text-red-600 text-zinc-400" title="Refund / Void" onClick={() => setRefundConfirm(transaction)}>
+                      {!transaction.isRefund && !isOriginalRefunded && transaction.paymentMethod !== 'split' && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors" title="Refund Transaction" onClick={() => handleRefund(transaction)} disabled={isRefunding}>
                           <RotateCcw className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
                   </TableCell>
-                </TableRow>
-              ))}
+                  </TableRow>
+                );
+              })}
               {filteredTransactions.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="h-32 text-center text-zinc-400">

@@ -1,266 +1,120 @@
-import { useEffect, useState } from 'react';
-import {
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  onSnapshot,
-  orderBy,
-  query,
-  setDoc,
-  updateDoc,
-  where,
-  writeBatch,
-  limit as fsLimit,
-} from 'firebase/firestore';
-import { firestoreDb } from './firebase';
+import Dexie, { Table } from 'dexie';
+import { useLiveQuery as dexieUseLiveQuery } from 'dexie-react-hooks';
+import { 
+  UserProfile, 
+  Business, 
+  Table as DiningTable, 
+  Product, 
+  Category, 
+  Order, 
+  Transaction, 
+  Customer, 
+  CashShift, 
+  StaffInvite,
+  ParkedOrder
+} from '../types';
 
-let activeLiveQuerySetter: ((data: any) => void) | null = null;
-let activeLiveQueryRegisterUnsub: ((unsub: () => void) => void) | null = null;
-
-export function useLiveQuery<T>(querier: () => Promise<T> | T, deps: any[] = []): T | undefined {
-  const [data, setData] = useState<T | undefined>(undefined);
-
-  useEffect(() => {
-    let unsub: (() => void) | null = null;
-    let cancelled = false;
-
-    activeLiveQuerySetter = setData;
-    activeLiveQueryRegisterUnsub = (registeredUnsub) => {
-      unsub = registeredUnsub;
-    };
-
-    const result = querier();
-
-    activeLiveQuerySetter = null;
-    activeLiveQueryRegisterUnsub = null;
-
-    if (result instanceof Promise) {
-      result.then((value) => {
-        if (!cancelled) {
-          setData(value);
-        }
-      }).catch(console.error);
-    } else if (!cancelled) {
-      setData(result);
-    }
-
-    return () => {
-      cancelled = true;
-      if (unsub) unsub();
-    };
-  }, deps);
-
-  return data;
-}
-
-class QueryWrapper<T = any> {
-  private anyOfValues: any[] | null = null;
-  private equalsValue: any = null;
-  private extraFilter: ((item: T) => boolean) | null = null;
-  private reversed = false;
-  private limitedTo = 0;
-  private sortedField: string | null = null;
-
-  constructor(private collectionName: string, private field: string) {}
-
-  anyOf(values: any[]) {
-    this.anyOfValues = values;
-    return this;
+export const generateId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
   }
+  return 'xxxx-xxxx-4xxx-yxxx-xxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
 
-  and(filter: (item: T) => boolean) {
-    this.extraFilter = filter;
-    return this;
-  }
+export class POSDatabase extends Dexie {
+  users!: Table<UserProfile, string>;
+  businesses!: Table<Business, string>;
+  diningTables!: Table<DiningTable, string>;
+  products!: Table<Product, string>;
+  categories!: Table<Category, string>;
+  orders!: Table<Order, string>;
+  transactions!: Table<Transaction, string>;
+  customers!: Table<Customer, string>;
+  shifts!: Table<CashShift, string>;
+  staffInvites!: Table<StaffInvite, string>;
+  parkedOrders!: Table<ParkedOrder, string>;
 
-  equals(value: any) {
-    this.equalsValue = value;
-    return this;
-  }
+  constructor() {
+    super('BakeryPOSDatabase');
+    
+    this.version(1).stores({
+      users: 'uid, businessId, role',
+      businesses: 'id, type, ownerId',
+      diningTables: 'id, businessId, status',
+      products: 'id, businessId, categoryId, barcode',
+      categories: 'id, businessId',
+      orders: 'id, businessId, status, createdAt',
+      transactions: 'id, businessId, orderId, shiftId, createdAt',
+      customers: 'id, businessId, name, phone',
+      shifts: 'id, businessId, status, openedAt',
+      staffInvites: 'id, businessId, status'
+    });
 
-  reverse() {
-    this.reversed = true;
-    return this;
-  }
-
-  limit(count: number) {
-    this.limitedTo = count;
-    return this;
-  }
-
-  sortBy(field: string) {
-    this.sortedField = field;
-    return this;
-  }
-
-  private buildQuery() {
-    const constraints: any[] = [];
-    constraints.push(this.anyOfValues ? where(this.field, 'in', this.anyOfValues) : where(this.field, '==', this.equalsValue));
-
-    if (this.sortedField) {
-      constraints.push(orderBy(this.sortedField, this.reversed ? 'desc' : 'asc'));
-    } else if (this.reversed) {
-      constraints.push(orderBy(this.field, 'desc'));
-    }
-
-    if (this.limitedTo) {
-      constraints.push(fsLimit(this.limitedTo));
-    }
-
-    return query(collection(firestoreDb, this.collectionName), ...constraints);
-  }
-
-  toArray(): Promise<T[]> {
-    const setter = activeLiveQuerySetter;
-    const registerUnsub = activeLiveQueryRegisterUnsub;
-
-    return new Promise((resolve, reject) => {
-      const builtQuery = this.buildQuery();
-      if (setter && registerUnsub) {
-        let isFirst = true;
-        const unsub = onSnapshot(
-          builtQuery,
-          (snapshot) => {
-            let items = snapshot.docs.map((snapshotDoc) => ({ id: snapshotDoc.id, ...snapshotDoc.data() } as T));
-            if (this.extraFilter) items = items.filter(this.extraFilter);
-            if (isFirst) {
-              resolve(items);
-              isFirst = false;
-            } else {
-              setter(items);
-            }
-          },
-          reject
-        );
-        registerUnsub(unsub);
-        return;
-      }
-
-      getDocs(builtQuery)
-        .then((snapshot) => {
-          let items = snapshot.docs.map((snapshotDoc) => ({ id: snapshotDoc.id, ...snapshotDoc.data() } as T));
-          if (this.extraFilter) items = items.filter(this.extraFilter);
-          resolve(items);
-        })
-        .catch(reject);
+    this.version(2).stores({
+      users: 'uid, businessId, role',
+      businesses: 'id, type, ownerId',
+      diningTables: 'id, businessId, status',
+      products: 'id, businessId, categoryId, barcode',
+      categories: 'id, businessId',
+      orders: 'id, businessId, status, createdAt',
+      transactions: 'id, businessId, orderId, shiftId, createdAt',
+      customers: 'id, businessId, name, phone',
+      shifts: 'id, businessId, status, openedAt',
+      staffInvites: 'id, businessId, status',
+      parkedOrders: 'id, businessId, createdAt'
     });
   }
-
-  first(): Promise<T | undefined> {
-    return this.limit(1).toArray().then((items) => items[0]);
-  }
-
-  async modify(changes: any) {
-    const builtQuery = this.buildQuery();
-    const snapshot = await getDocs(builtQuery);
-    const batch = writeBatch(firestoreDb);
-    snapshot.docs.forEach((snapshotDoc) => {
-      batch.update(snapshotDoc.ref, changes);
-    });
-    await batch.commit();
-  }
 }
+
+export const dexieDb = new POSDatabase();
+export const useLiveQuery = dexieUseLiveQuery;
 
 class CollectionWrapper<T = any> {
-  constructor(private collectionName: string) {}
+  constructor(private table: Table<T, string>) {}
 
   get(id: string) {
     if (!id) return Promise.resolve(undefined);
-
-    const setter = activeLiveQuerySetter;
-    const registerUnsub = activeLiveQueryRegisterUnsub;
-    return new Promise<T | undefined>((resolve, reject) => {
-      const ref = doc(firestoreDb, this.collectionName, id);
-      if (setter && registerUnsub) {
-        let isFirst = true;
-        const unsub = onSnapshot(
-          ref,
-          (snapshot) => {
-            const data = snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as T) : undefined;
-            if (isFirst) {
-              resolve(data);
-              isFirst = false;
-            } else {
-              setter(data);
-            }
-          },
-          reject
-        );
-        registerUnsub(unsub);
-        return;
-      }
-
-      getDoc(ref)
-        .then((snapshot) => resolve(snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as T) : undefined))
-        .catch(reject);
-    });
+    return this.table.get(id);
   }
 
   async add(data: any) {
-    const id = data.id || data.uid || crypto.randomUUID();
+    const id = data.id || data.uid || generateId();
     const record = { ...data, id };
-    if (this.collectionName === 'users') {
+    if (this.table.name === 'users') {
       record.uid = record.uid || id;
     }
-    await setDoc(doc(firestoreDb, this.collectionName, id), record);
+    await this.table.put(record as unknown as T, id);
     return id;
   }
 
   async update(id: string, data: any) {
     if (!id) return;
-    await updateDoc(doc(firestoreDb, this.collectionName, id), data);
+    await this.table.update(id, data);
   }
 
   async delete(id: string) {
     if (!id) return;
-    await deleteDoc(doc(firestoreDb, this.collectionName, id));
+    await this.table.delete(id);
   }
 
   toArray(): Promise<T[]> {
-    const setter = activeLiveQuerySetter;
-    const registerUnsub = activeLiveQueryRegisterUnsub;
-
-    return new Promise((resolve, reject) => {
-      const ref = collection(firestoreDb, this.collectionName);
-      if (setter && registerUnsub) {
-        let isFirst = true;
-        const unsub = onSnapshot(
-          ref,
-          (snapshot) => {
-            const items = snapshot.docs.map((snapshotDoc) => ({ id: snapshotDoc.id, ...snapshotDoc.data() } as T));
-            if (isFirst) {
-              resolve(items);
-              isFirst = false;
-            } else {
-              setter(items);
-            }
-          },
-          reject
-        );
-        registerUnsub(unsub);
-        return;
-      }
-
-      getDocs(ref)
-        .then((snapshot) => resolve(snapshot.docs.map((snapshotDoc) => ({ id: snapshotDoc.id, ...snapshotDoc.data() } as T))))
-        .catch(reject);
-    });
+    return this.table.toArray();
   }
 
   async count() {
-    const snapshot = await getDocs(collection(firestoreDb, this.collectionName));
-    return snapshot.docs.length;
+    return this.table.count();
   }
 
   async bulkAdd(rows: any[]) {
-    const batch = writeBatch(firestoreDb);
-    rows.forEach((row) => {
-      const id = row.id || row.uid || crypto.randomUUID();
-      batch.set(doc(firestoreDb, this.collectionName, id), { ...row, id });
+    const processedRows = rows.map(row => {
+      const id = row.id || row.uid || generateId();
+      return { ...row, id };
     });
-    await batch.commit();
+    await this.table.bulkPut(processedRows as unknown as T[]);
   }
 
   async bulkPut(rows: any[]) {
@@ -268,20 +122,30 @@ class CollectionWrapper<T = any> {
   }
 
   where(field: string) {
-    return new QueryWrapper<T>(this.collectionName, field);
+    return {
+      equals: (val: any) => ({
+        toArray: () => this.table.where(field).equals(val).toArray(),
+        first: () => this.table.where(field).equals(val).first(),
+        modify: (changes: any) => this.table.where(field).equals(val).modify(changes),
+      }),
+      anyOf: (vals: any[]) => ({
+        toArray: () => this.table.where(field).anyOf(vals).toArray(),
+      }),
+    };
   }
 }
 
 export const db: any = {
-  version: () => ({ stores: () => {} }),
-  users: new CollectionWrapper('users'),
-  businesses: new CollectionWrapper('businesses'),
-  diningTables: new CollectionWrapper('diningTables'),
-  products: new CollectionWrapper('products'),
-  categories: new CollectionWrapper('categories'),
-  orders: new CollectionWrapper('orders'),
-  transactions: new CollectionWrapper('transactions'),
-  customers: new CollectionWrapper('customers'),
-  shifts: new CollectionWrapper('shifts'),
-  staffInvites: new CollectionWrapper('staffInvites'),
+  version: () => dexieDb.verno,
+  users: new CollectionWrapper(dexieDb.users as any),
+  businesses: new CollectionWrapper(dexieDb.businesses as any),
+  diningTables: new CollectionWrapper(dexieDb.diningTables as any),
+  products: new CollectionWrapper(dexieDb.products as any),
+  categories: new CollectionWrapper(dexieDb.categories as any),
+  orders: new CollectionWrapper(dexieDb.orders as any),
+  transactions: new CollectionWrapper(dexieDb.transactions as any),
+  customers: new CollectionWrapper(dexieDb.customers as any),
+  shifts: new CollectionWrapper(dexieDb.shifts as any),
+  staffInvites: new CollectionWrapper(dexieDb.staffInvites as any),
+  parkedOrders: new CollectionWrapper(dexieDb.parkedOrders as any),
 };
