@@ -1,7 +1,7 @@
 {
   "name": "zez-pos",
   "productName": "ZEZ-POS",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "ZEZ-POS Fiscal Point of Sale System",
   "author": "ZEZ",
   "private": true,

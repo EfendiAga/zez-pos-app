@@ -17234,7 +17234,7 @@ var require_internal = __commonJS({
       // Codec.
       _internal: InternalCodec
     };
-    function InternalCodec(codecOptions, iconv2) {
+    function InternalCodec(codecOptions, iconv3) {
       this.enc = codecOptions.encodingName;
       this.bomAware = codecOptions.bomAware;
       if (this.enc === "base64")
@@ -17244,7 +17244,7 @@ var require_internal = __commonJS({
         this.encoder = InternalEncoderCesu8;
         if (Buffer2.from("eda0bdedb2a9", "hex").toString() !== "\u{1F4A9}") {
           this.decoder = InternalDecoderCesu8;
-          this.defaultCharUnicode = iconv2.defaultCharUnicode;
+          this.defaultCharUnicode = iconv3.defaultCharUnicode;
         }
       }
     }
@@ -17407,8 +17407,8 @@ var require_utf16 = __commonJS({
     Utf16BEDecoder.prototype.end = function() {
     };
     exports2.utf16 = Utf16Codec;
-    function Utf16Codec(codecOptions, iconv2) {
-      this.iconv = iconv2;
+    function Utf16Codec(codecOptions, iconv3) {
+      this.iconv = iconv3;
     }
     Utf16Codec.prototype.encoder = Utf16Encoder;
     Utf16Codec.prototype.decoder = Utf16Decoder;
@@ -17483,8 +17483,8 @@ var require_utf7 = __commonJS({
     var Buffer2 = require_safer().Buffer;
     exports2.utf7 = Utf7Codec;
     exports2.unicode11utf7 = "utf7";
-    function Utf7Codec(codecOptions, iconv2) {
-      this.iconv = iconv2;
+    function Utf7Codec(codecOptions, iconv3) {
+      this.iconv = iconv3;
     }
     Utf7Codec.prototype.encoder = Utf7Encoder;
     Utf7Codec.prototype.decoder = Utf7Decoder;
@@ -17560,8 +17560,8 @@ var require_utf7 = __commonJS({
       return res;
     };
     exports2.utf7imap = Utf7IMAPCodec;
-    function Utf7IMAPCodec(codecOptions, iconv2) {
-      this.iconv = iconv2;
+    function Utf7IMAPCodec(codecOptions, iconv3) {
+      this.iconv = iconv3;
     }
     Utf7IMAPCodec.prototype.encoder = Utf7IMAPEncoder;
     Utf7IMAPCodec.prototype.decoder = Utf7IMAPDecoder;
@@ -17683,7 +17683,7 @@ var require_sbcs_codec = __commonJS({
     "use strict";
     var Buffer2 = require_safer().Buffer;
     exports2._sbcs = SBCSCodec;
-    function SBCSCodec(codecOptions, iconv2) {
+    function SBCSCodec(codecOptions, iconv3) {
       if (!codecOptions)
         throw new Error("SBCS codec is called without the data.");
       if (!codecOptions.chars || codecOptions.chars.length !== 128 && codecOptions.chars.length !== 256)
@@ -17695,7 +17695,7 @@ var require_sbcs_codec = __commonJS({
         codecOptions.chars = asciiString + codecOptions.chars;
       }
       this.decodeBuf = Buffer2.from(codecOptions.chars, "ucs2");
-      var encodeBuf = Buffer2.alloc(65536, iconv2.defaultCharSingleByte.charCodeAt(0));
+      var encodeBuf = Buffer2.alloc(65536, iconv3.defaultCharSingleByte.charCodeAt(0));
       for (var i = 0; i < codecOptions.chars.length; i++)
         encodeBuf[codecOptions.chars.charCodeAt(i)] = i;
       this.encodeBuf = encodeBuf;
@@ -18352,7 +18352,7 @@ var require_dbcs_codec = __commonJS({
     for (i = 0; i < 256; i++)
       UNASSIGNED_NODE[i] = UNASSIGNED;
     var i;
-    function DBCSCodec(codecOptions, iconv2) {
+    function DBCSCodec(codecOptions, iconv3) {
       this.encodingName = codecOptions.encodingName;
       if (!codecOptions)
         throw new Error("DBCS codec is called without the data.");
@@ -18364,7 +18364,7 @@ var require_dbcs_codec = __commonJS({
       this.decodeTableSeq = [];
       for (var i2 = 0; i2 < mappingTable.length; i2++)
         this._addDecodeChunk(mappingTable[i2]);
-      this.defaultCharUnicode = iconv2.defaultCharUnicode;
+      this.defaultCharUnicode = iconv3.defaultCharUnicode;
       this.encodeTable = [];
       this.encodeTableSeq = [];
       var skipEncodeChars = {};
@@ -18383,7 +18383,7 @@ var require_dbcs_codec = __commonJS({
           if (Object.prototype.hasOwnProperty.call(codecOptions.encodeAdd, uChar))
             this._setEncodeChar(uChar.charCodeAt(0), codecOptions.encodeAdd[uChar]);
       }
-      this.defCharSB = this.encodeTable[0][iconv2.defaultCharSingleByte.charCodeAt(0)];
+      this.defCharSB = this.encodeTable[0][iconv3.defaultCharSingleByte.charCodeAt(0)];
       if (this.defCharSB === UNASSIGNED) this.defCharSB = this.encodeTable[0]["?"];
       if (this.defCharSB === UNASSIGNED) this.defCharSB = "?".charCodeAt(0);
       if (typeof codecOptions.gb18030 === "function") {
@@ -20172,17 +20172,17 @@ var require_streams = __commonJS({
     "use strict";
     var Buffer2 = require("buffer").Buffer;
     var Transform = require("stream").Transform;
-    module2.exports = function(iconv2) {
-      iconv2.encodeStream = function encodeStream(encoding, options) {
-        return new IconvLiteEncoderStream(iconv2.getEncoder(encoding, options), options);
+    module2.exports = function(iconv3) {
+      iconv3.encodeStream = function encodeStream(encoding, options) {
+        return new IconvLiteEncoderStream(iconv3.getEncoder(encoding, options), options);
       };
-      iconv2.decodeStream = function decodeStream(encoding, options) {
-        return new IconvLiteDecoderStream(iconv2.getDecoder(encoding, options), options);
+      iconv3.decodeStream = function decodeStream(encoding, options) {
+        return new IconvLiteDecoderStream(iconv3.getDecoder(encoding, options), options);
       };
-      iconv2.supportsStreams = true;
-      iconv2.IconvLiteEncoderStream = IconvLiteEncoderStream;
-      iconv2.IconvLiteDecoderStream = IconvLiteDecoderStream;
-      iconv2._collect = IconvLiteDecoderStream.prototype.collect;
+      iconv3.supportsStreams = true;
+      iconv3.IconvLiteEncoderStream = IconvLiteEncoderStream;
+      iconv3.IconvLiteDecoderStream = IconvLiteDecoderStream;
+      iconv3._collect = IconvLiteDecoderStream.prototype.collect;
     };
     function IconvLiteEncoderStream(conv, options) {
       this.conv = conv;
@@ -20272,13 +20272,13 @@ var require_extend_node = __commonJS({
   "node_modules/raw-body/node_modules/iconv-lite/lib/extend-node.js"(exports2, module2) {
     "use strict";
     var Buffer2 = require("buffer").Buffer;
-    module2.exports = function(iconv2) {
+    module2.exports = function(iconv3) {
       var original = void 0;
-      iconv2.supportsNodeEncodingsExtension = !(Buffer2.from || new Buffer2(0) instanceof Uint8Array);
-      iconv2.extendNodeEncodings = function extendNodeEncodings() {
+      iconv3.supportsNodeEncodingsExtension = !(Buffer2.from || new Buffer2(0) instanceof Uint8Array);
+      iconv3.extendNodeEncodings = function extendNodeEncodings() {
         if (original) return;
         original = {};
-        if (!iconv2.supportsNodeEncodingsExtension) {
+        if (!iconv3.supportsNodeEncodingsExtension) {
           console.error("ACTION NEEDED: require('iconv-lite').extendNodeEncodings() is not supported in your version of Node");
           console.error("See more info at https://github.com/ashtuchkin/iconv-lite/wiki/Node-v4-compatibility");
           return;
@@ -20306,7 +20306,7 @@ var require_extend_node = __commonJS({
             return original.SlowBufferToString.call(this, encoding, start, end);
           if (typeof start == "undefined") start = 0;
           if (typeof end == "undefined") end = this.length;
-          return iconv2.decode(this.slice(start, end), encoding);
+          return iconv3.decode(this.slice(start, end), encoding);
         };
         original.SlowBufferWrite = SlowBuffer.prototype.write;
         SlowBuffer.prototype.write = function(string, offset, length, encoding) {
@@ -20336,21 +20336,21 @@ var require_extend_node = __commonJS({
             return original.SlowBufferWrite.call(this, string, offset, length, encoding);
           if (string.length > 0 && (length < 0 || offset < 0))
             throw new RangeError("attempt to write beyond buffer bounds");
-          var buf = iconv2.encode(string, encoding);
+          var buf = iconv3.encode(string, encoding);
           if (buf.length < length) length = buf.length;
           buf.copy(this, offset, 0, length);
           return length;
         };
         original.BufferIsEncoding = Buffer2.isEncoding;
         Buffer2.isEncoding = function(encoding) {
-          return Buffer2.isNativeEncoding(encoding) || iconv2.encodingExists(encoding);
+          return Buffer2.isNativeEncoding(encoding) || iconv3.encodingExists(encoding);
         };
         original.BufferByteLength = Buffer2.byteLength;
         Buffer2.byteLength = SlowBuffer.byteLength = function(str, encoding) {
           encoding = String(encoding || "utf8").toLowerCase();
           if (Buffer2.isNativeEncoding(encoding))
             return original.BufferByteLength.call(this, str, encoding);
-          return iconv2.encode(str, encoding).length;
+          return iconv3.encode(str, encoding).length;
         };
         original.BufferToString = Buffer2.prototype.toString;
         Buffer2.prototype.toString = function(encoding, start, end) {
@@ -20359,7 +20359,7 @@ var require_extend_node = __commonJS({
             return original.BufferToString.call(this, encoding, start, end);
           if (typeof start == "undefined") start = 0;
           if (typeof end == "undefined") end = this.length;
-          return iconv2.decode(this.slice(start, end), encoding);
+          return iconv3.decode(this.slice(start, end), encoding);
         };
         original.BufferWrite = Buffer2.prototype.write;
         Buffer2.prototype.write = function(string, offset, length, encoding) {
@@ -20390,23 +20390,23 @@ var require_extend_node = __commonJS({
           }
           if (string.length > 0 && (length < 0 || offset < 0))
             throw new RangeError("attempt to write beyond buffer bounds");
-          var buf = iconv2.encode(string, encoding);
+          var buf = iconv3.encode(string, encoding);
           if (buf.length < length) length = buf.length;
           buf.copy(this, offset, 0, length);
           return length;
         };
-        if (iconv2.supportsStreams) {
+        if (iconv3.supportsStreams) {
           var Readable = require("stream").Readable;
           original.ReadableSetEncoding = Readable.prototype.setEncoding;
           Readable.prototype.setEncoding = function setEncoding(enc, options) {
-            this._readableState.decoder = iconv2.getDecoder(enc, options);
+            this._readableState.decoder = iconv3.getDecoder(enc, options);
             this._readableState.encoding = enc;
           };
-          Readable.prototype.collect = iconv2._collect;
+          Readable.prototype.collect = iconv3._collect;
         }
       };
-      iconv2.undoExtendNodeEncodings = function undoExtendNodeEncodings() {
-        if (!iconv2.supportsNodeEncodingsExtension)
+      iconv3.undoExtendNodeEncodings = function undoExtendNodeEncodings() {
+        if (!iconv3.supportsNodeEncodingsExtension)
           return;
         if (!original)
           throw new Error("require('iconv-lite').undoExtendNodeEncodings(): Nothing to undo; extendNodeEncodings() is not called.");
@@ -20418,7 +20418,7 @@ var require_extend_node = __commonJS({
         Buffer2.byteLength = original.BufferByteLength;
         Buffer2.prototype.toString = original.BufferToString;
         Buffer2.prototype.write = original.BufferWrite;
-        if (iconv2.supportsStreams) {
+        if (iconv3.supportsStreams) {
           var Readable = require("stream").Readable;
           Readable.prototype.setEncoding = original.ReadableSetEncoding;
           delete Readable.prototype.collect;
@@ -20435,51 +20435,51 @@ var require_lib2 = __commonJS({
     "use strict";
     var Buffer2 = require_safer().Buffer;
     var bomHandling = require_bom_handling();
-    var iconv2 = module2.exports;
-    iconv2.encodings = null;
-    iconv2.defaultCharUnicode = "\uFFFD";
-    iconv2.defaultCharSingleByte = "?";
-    iconv2.encode = function encode(str, encoding, options) {
+    var iconv3 = module2.exports;
+    iconv3.encodings = null;
+    iconv3.defaultCharUnicode = "\uFFFD";
+    iconv3.defaultCharSingleByte = "?";
+    iconv3.encode = function encode(str, encoding, options) {
       str = "" + (str || "");
-      var encoder = iconv2.getEncoder(encoding, options);
+      var encoder = iconv3.getEncoder(encoding, options);
       var res = encoder.write(str);
       var trail = encoder.end();
       return trail && trail.length > 0 ? Buffer2.concat([res, trail]) : res;
     };
-    iconv2.decode = function decode(buf, encoding, options) {
+    iconv3.decode = function decode(buf, encoding, options) {
       if (typeof buf === "string") {
-        if (!iconv2.skipDecodeWarning) {
+        if (!iconv3.skipDecodeWarning) {
           console.error("Iconv-lite warning: decode()-ing strings is deprecated. Refer to https://github.com/ashtuchkin/iconv-lite/wiki/Use-Buffers-when-decoding");
-          iconv2.skipDecodeWarning = true;
+          iconv3.skipDecodeWarning = true;
         }
         buf = Buffer2.from("" + (buf || ""), "binary");
       }
-      var decoder = iconv2.getDecoder(encoding, options);
+      var decoder = iconv3.getDecoder(encoding, options);
       var res = decoder.write(buf);
       var trail = decoder.end();
       return trail ? res + trail : res;
     };
-    iconv2.encodingExists = function encodingExists(enc) {
+    iconv3.encodingExists = function encodingExists(enc) {
       try {
-        iconv2.getCodec(enc);
+        iconv3.getCodec(enc);
         return true;
       } catch (e) {
         return false;
       }
     };
-    iconv2.toEncoding = iconv2.encode;
-    iconv2.fromEncoding = iconv2.decode;
-    iconv2._codecDataCache = {};
-    iconv2.getCodec = function getCodec(encoding) {
-      if (!iconv2.encodings)
-        iconv2.encodings = require_encodings();
-      var enc = iconv2._canonicalizeEncoding(encoding);
+    iconv3.toEncoding = iconv3.encode;
+    iconv3.fromEncoding = iconv3.decode;
+    iconv3._codecDataCache = {};
+    iconv3.getCodec = function getCodec(encoding) {
+      if (!iconv3.encodings)
+        iconv3.encodings = require_encodings();
+      var enc = iconv3._canonicalizeEncoding(encoding);
       var codecOptions = {};
       while (true) {
-        var codec = iconv2._codecDataCache[enc];
+        var codec = iconv3._codecDataCache[enc];
         if (codec)
           return codec;
-        var codecDef = iconv2.encodings[enc];
+        var codecDef = iconv3.encodings[enc];
         switch (typeof codecDef) {
           case "string":
             enc = codecDef;
@@ -20494,25 +20494,25 @@ var require_lib2 = __commonJS({
           case "function":
             if (!codecOptions.encodingName)
               codecOptions.encodingName = enc;
-            codec = new codecDef(codecOptions, iconv2);
-            iconv2._codecDataCache[codecOptions.encodingName] = codec;
+            codec = new codecDef(codecOptions, iconv3);
+            iconv3._codecDataCache[codecOptions.encodingName] = codec;
             return codec;
           default:
             throw new Error("Encoding not recognized: '" + encoding + "' (searched as: '" + enc + "')");
         }
       }
     };
-    iconv2._canonicalizeEncoding = function(encoding) {
+    iconv3._canonicalizeEncoding = function(encoding) {
       return ("" + encoding).toLowerCase().replace(/:\d{4}$|[^0-9a-z]/g, "");
     };
-    iconv2.getEncoder = function getEncoder(encoding, options) {
-      var codec = iconv2.getCodec(encoding), encoder = new codec.encoder(options, codec);
+    iconv3.getEncoder = function getEncoder(encoding, options) {
+      var codec = iconv3.getCodec(encoding), encoder = new codec.encoder(options, codec);
       if (codec.bomAware && options && options.addBOM)
         encoder = new bomHandling.PrependBOM(encoder, options);
       return encoder;
     };
-    iconv2.getDecoder = function getDecoder(encoding, options) {
-      var codec = iconv2.getCodec(encoding), decoder = new codec.decoder(options, codec);
+    iconv3.getDecoder = function getDecoder(encoding, options) {
+      var codec = iconv3.getCodec(encoding), decoder = new codec.decoder(options, codec);
       if (codec.bomAware && !(options && options.stripBOM === false))
         decoder = new bomHandling.StripBOM(decoder, options);
       return decoder;
@@ -20521,9 +20521,9 @@ var require_lib2 = __commonJS({
     if (nodeVer) {
       nodeVerArr = nodeVer.split(".").map(Number);
       if (nodeVerArr[0] > 0 || nodeVerArr[1] >= 10) {
-        require_streams()(iconv2);
+        require_streams()(iconv3);
       }
-      require_extend_node()(iconv2);
+      require_extend_node()(iconv3);
     }
     var nodeVerArr;
     if (false) {
@@ -20577,14 +20577,14 @@ var require_raw_body = __commonJS({
     var asyncHooks = tryRequireAsyncHooks();
     var bytes = require_bytes();
     var createError = require_http_errors();
-    var iconv2 = require_lib2();
+    var iconv3 = require_lib2();
     var unpipe = require_unpipe();
     module2.exports = getRawBody;
     var ICONV_ENCODING_MESSAGE_REGEXP = /^Encoding not recognized: /;
     function getDecoder(encoding) {
       if (!encoding) return null;
       try {
-        return iconv2.getDecoder(encoding);
+        return iconv3.getDecoder(encoding);
       } catch (e) {
         if (!ICONV_ENCODING_MESSAGE_REGEXP.test(e.message)) throw e;
         throw createError(415, "specified encoding unsupported", {
@@ -20821,7 +20821,7 @@ var require_internal2 = __commonJS({
       // Codec.
       _internal: InternalCodec
     };
-    function InternalCodec(codecOptions, iconv2) {
+    function InternalCodec(codecOptions, iconv3) {
       this.enc = codecOptions.encodingName;
       this.bomAware = codecOptions.bomAware;
       if (this.enc === "base64")
@@ -20831,7 +20831,7 @@ var require_internal2 = __commonJS({
         this.encoder = InternalEncoderCesu8;
         if (Buffer2.from("eda0bdedb2a9", "hex").toString() !== "\u{1F4A9}") {
           this.decoder = InternalDecoderCesu8;
-          this.defaultCharUnicode = iconv2.defaultCharUnicode;
+          this.defaultCharUnicode = iconv3.defaultCharUnicode;
         }
       }
     }
@@ -20994,8 +20994,8 @@ var require_utf162 = __commonJS({
     Utf16BEDecoder.prototype.end = function() {
     };
     exports2.utf16 = Utf16Codec;
-    function Utf16Codec(codecOptions, iconv2) {
-      this.iconv = iconv2;
+    function Utf16Codec(codecOptions, iconv3) {
+      this.iconv = iconv3;
     }
     Utf16Codec.prototype.encoder = Utf16Encoder;
     Utf16Codec.prototype.decoder = Utf16Decoder;
@@ -21070,8 +21070,8 @@ var require_utf72 = __commonJS({
     var Buffer2 = require_safer().Buffer;
     exports2.utf7 = Utf7Codec;
     exports2.unicode11utf7 = "utf7";
-    function Utf7Codec(codecOptions, iconv2) {
-      this.iconv = iconv2;
+    function Utf7Codec(codecOptions, iconv3) {
+      this.iconv = iconv3;
     }
     Utf7Codec.prototype.encoder = Utf7Encoder;
     Utf7Codec.prototype.decoder = Utf7Decoder;
@@ -21147,8 +21147,8 @@ var require_utf72 = __commonJS({
       return res;
     };
     exports2.utf7imap = Utf7IMAPCodec;
-    function Utf7IMAPCodec(codecOptions, iconv2) {
-      this.iconv = iconv2;
+    function Utf7IMAPCodec(codecOptions, iconv3) {
+      this.iconv = iconv3;
     }
     Utf7IMAPCodec.prototype.encoder = Utf7IMAPEncoder;
     Utf7IMAPCodec.prototype.decoder = Utf7IMAPDecoder;
@@ -21270,7 +21270,7 @@ var require_sbcs_codec2 = __commonJS({
     "use strict";
     var Buffer2 = require_safer().Buffer;
     exports2._sbcs = SBCSCodec;
-    function SBCSCodec(codecOptions, iconv2) {
+    function SBCSCodec(codecOptions, iconv3) {
       if (!codecOptions)
         throw new Error("SBCS codec is called without the data.");
       if (!codecOptions.chars || codecOptions.chars.length !== 128 && codecOptions.chars.length !== 256)
@@ -21282,7 +21282,7 @@ var require_sbcs_codec2 = __commonJS({
         codecOptions.chars = asciiString + codecOptions.chars;
       }
       this.decodeBuf = Buffer2.from(codecOptions.chars, "ucs2");
-      var encodeBuf = Buffer2.alloc(65536, iconv2.defaultCharSingleByte.charCodeAt(0));
+      var encodeBuf = Buffer2.alloc(65536, iconv3.defaultCharSingleByte.charCodeAt(0));
       for (var i = 0; i < codecOptions.chars.length; i++)
         encodeBuf[codecOptions.chars.charCodeAt(i)] = i;
       this.encodeBuf = encodeBuf;
@@ -21939,7 +21939,7 @@ var require_dbcs_codec2 = __commonJS({
     for (i = 0; i < 256; i++)
       UNASSIGNED_NODE[i] = UNASSIGNED;
     var i;
-    function DBCSCodec(codecOptions, iconv2) {
+    function DBCSCodec(codecOptions, iconv3) {
       this.encodingName = codecOptions.encodingName;
       if (!codecOptions)
         throw new Error("DBCS codec is called without the data.");
@@ -21951,7 +21951,7 @@ var require_dbcs_codec2 = __commonJS({
       this.decodeTableSeq = [];
       for (var i2 = 0; i2 < mappingTable.length; i2++)
         this._addDecodeChunk(mappingTable[i2]);
-      this.defaultCharUnicode = iconv2.defaultCharUnicode;
+      this.defaultCharUnicode = iconv3.defaultCharUnicode;
       this.encodeTable = [];
       this.encodeTableSeq = [];
       var skipEncodeChars = {};
@@ -21970,7 +21970,7 @@ var require_dbcs_codec2 = __commonJS({
           if (Object.prototype.hasOwnProperty.call(codecOptions.encodeAdd, uChar))
             this._setEncodeChar(uChar.charCodeAt(0), codecOptions.encodeAdd[uChar]);
       }
-      this.defCharSB = this.encodeTable[0][iconv2.defaultCharSingleByte.charCodeAt(0)];
+      this.defCharSB = this.encodeTable[0][iconv3.defaultCharSingleByte.charCodeAt(0)];
       if (this.defCharSB === UNASSIGNED) this.defCharSB = this.encodeTable[0]["?"];
       if (this.defCharSB === UNASSIGNED) this.defCharSB = "?".charCodeAt(0);
       if (typeof codecOptions.gb18030 === "function") {
@@ -23759,17 +23759,17 @@ var require_streams2 = __commonJS({
     "use strict";
     var Buffer2 = require("buffer").Buffer;
     var Transform = require("stream").Transform;
-    module2.exports = function(iconv2) {
-      iconv2.encodeStream = function encodeStream(encoding, options) {
-        return new IconvLiteEncoderStream(iconv2.getEncoder(encoding, options), options);
+    module2.exports = function(iconv3) {
+      iconv3.encodeStream = function encodeStream(encoding, options) {
+        return new IconvLiteEncoderStream(iconv3.getEncoder(encoding, options), options);
       };
-      iconv2.decodeStream = function decodeStream(encoding, options) {
-        return new IconvLiteDecoderStream(iconv2.getDecoder(encoding, options), options);
+      iconv3.decodeStream = function decodeStream(encoding, options) {
+        return new IconvLiteDecoderStream(iconv3.getDecoder(encoding, options), options);
       };
-      iconv2.supportsStreams = true;
-      iconv2.IconvLiteEncoderStream = IconvLiteEncoderStream;
-      iconv2.IconvLiteDecoderStream = IconvLiteDecoderStream;
-      iconv2._collect = IconvLiteDecoderStream.prototype.collect;
+      iconv3.supportsStreams = true;
+      iconv3.IconvLiteEncoderStream = IconvLiteEncoderStream;
+      iconv3.IconvLiteDecoderStream = IconvLiteDecoderStream;
+      iconv3._collect = IconvLiteDecoderStream.prototype.collect;
     };
     function IconvLiteEncoderStream(conv, options) {
       this.conv = conv;
@@ -23859,13 +23859,13 @@ var require_extend_node2 = __commonJS({
   "node_modules/body-parser/node_modules/iconv-lite/lib/extend-node.js"(exports2, module2) {
     "use strict";
     var Buffer2 = require("buffer").Buffer;
-    module2.exports = function(iconv2) {
+    module2.exports = function(iconv3) {
       var original = void 0;
-      iconv2.supportsNodeEncodingsExtension = !(Buffer2.from || new Buffer2(0) instanceof Uint8Array);
-      iconv2.extendNodeEncodings = function extendNodeEncodings() {
+      iconv3.supportsNodeEncodingsExtension = !(Buffer2.from || new Buffer2(0) instanceof Uint8Array);
+      iconv3.extendNodeEncodings = function extendNodeEncodings() {
         if (original) return;
         original = {};
-        if (!iconv2.supportsNodeEncodingsExtension) {
+        if (!iconv3.supportsNodeEncodingsExtension) {
           console.error("ACTION NEEDED: require('iconv-lite').extendNodeEncodings() is not supported in your version of Node");
           console.error("See more info at https://github.com/ashtuchkin/iconv-lite/wiki/Node-v4-compatibility");
           return;
@@ -23893,7 +23893,7 @@ var require_extend_node2 = __commonJS({
             return original.SlowBufferToString.call(this, encoding, start, end);
           if (typeof start == "undefined") start = 0;
           if (typeof end == "undefined") end = this.length;
-          return iconv2.decode(this.slice(start, end), encoding);
+          return iconv3.decode(this.slice(start, end), encoding);
         };
         original.SlowBufferWrite = SlowBuffer.prototype.write;
         SlowBuffer.prototype.write = function(string, offset, length, encoding) {
@@ -23923,21 +23923,21 @@ var require_extend_node2 = __commonJS({
             return original.SlowBufferWrite.call(this, string, offset, length, encoding);
           if (string.length > 0 && (length < 0 || offset < 0))
             throw new RangeError("attempt to write beyond buffer bounds");
-          var buf = iconv2.encode(string, encoding);
+          var buf = iconv3.encode(string, encoding);
           if (buf.length < length) length = buf.length;
           buf.copy(this, offset, 0, length);
           return length;
         };
         original.BufferIsEncoding = Buffer2.isEncoding;
         Buffer2.isEncoding = function(encoding) {
-          return Buffer2.isNativeEncoding(encoding) || iconv2.encodingExists(encoding);
+          return Buffer2.isNativeEncoding(encoding) || iconv3.encodingExists(encoding);
         };
         original.BufferByteLength = Buffer2.byteLength;
         Buffer2.byteLength = SlowBuffer.byteLength = function(str, encoding) {
           encoding = String(encoding || "utf8").toLowerCase();
           if (Buffer2.isNativeEncoding(encoding))
             return original.BufferByteLength.call(this, str, encoding);
-          return iconv2.encode(str, encoding).length;
+          return iconv3.encode(str, encoding).length;
         };
         original.BufferToString = Buffer2.prototype.toString;
         Buffer2.prototype.toString = function(encoding, start, end) {
@@ -23946,7 +23946,7 @@ var require_extend_node2 = __commonJS({
             return original.BufferToString.call(this, encoding, start, end);
           if (typeof start == "undefined") start = 0;
           if (typeof end == "undefined") end = this.length;
-          return iconv2.decode(this.slice(start, end), encoding);
+          return iconv3.decode(this.slice(start, end), encoding);
         };
         original.BufferWrite = Buffer2.prototype.write;
         Buffer2.prototype.write = function(string, offset, length, encoding) {
@@ -23977,23 +23977,23 @@ var require_extend_node2 = __commonJS({
           }
           if (string.length > 0 && (length < 0 || offset < 0))
             throw new RangeError("attempt to write beyond buffer bounds");
-          var buf = iconv2.encode(string, encoding);
+          var buf = iconv3.encode(string, encoding);
           if (buf.length < length) length = buf.length;
           buf.copy(this, offset, 0, length);
           return length;
         };
-        if (iconv2.supportsStreams) {
+        if (iconv3.supportsStreams) {
           var Readable = require("stream").Readable;
           original.ReadableSetEncoding = Readable.prototype.setEncoding;
           Readable.prototype.setEncoding = function setEncoding(enc, options) {
-            this._readableState.decoder = iconv2.getDecoder(enc, options);
+            this._readableState.decoder = iconv3.getDecoder(enc, options);
             this._readableState.encoding = enc;
           };
-          Readable.prototype.collect = iconv2._collect;
+          Readable.prototype.collect = iconv3._collect;
         }
       };
-      iconv2.undoExtendNodeEncodings = function undoExtendNodeEncodings() {
-        if (!iconv2.supportsNodeEncodingsExtension)
+      iconv3.undoExtendNodeEncodings = function undoExtendNodeEncodings() {
+        if (!iconv3.supportsNodeEncodingsExtension)
           return;
         if (!original)
           throw new Error("require('iconv-lite').undoExtendNodeEncodings(): Nothing to undo; extendNodeEncodings() is not called.");
@@ -24005,7 +24005,7 @@ var require_extend_node2 = __commonJS({
         Buffer2.byteLength = original.BufferByteLength;
         Buffer2.prototype.toString = original.BufferToString;
         Buffer2.prototype.write = original.BufferWrite;
-        if (iconv2.supportsStreams) {
+        if (iconv3.supportsStreams) {
           var Readable = require("stream").Readable;
           Readable.prototype.setEncoding = original.ReadableSetEncoding;
           delete Readable.prototype.collect;
@@ -24022,51 +24022,51 @@ var require_lib3 = __commonJS({
     "use strict";
     var Buffer2 = require_safer().Buffer;
     var bomHandling = require_bom_handling2();
-    var iconv2 = module2.exports;
-    iconv2.encodings = null;
-    iconv2.defaultCharUnicode = "\uFFFD";
-    iconv2.defaultCharSingleByte = "?";
-    iconv2.encode = function encode(str, encoding, options) {
+    var iconv3 = module2.exports;
+    iconv3.encodings = null;
+    iconv3.defaultCharUnicode = "\uFFFD";
+    iconv3.defaultCharSingleByte = "?";
+    iconv3.encode = function encode(str, encoding, options) {
       str = "" + (str || "");
-      var encoder = iconv2.getEncoder(encoding, options);
+      var encoder = iconv3.getEncoder(encoding, options);
       var res = encoder.write(str);
       var trail = encoder.end();
       return trail && trail.length > 0 ? Buffer2.concat([res, trail]) : res;
     };
-    iconv2.decode = function decode(buf, encoding, options) {
+    iconv3.decode = function decode(buf, encoding, options) {
       if (typeof buf === "string") {
-        if (!iconv2.skipDecodeWarning) {
+        if (!iconv3.skipDecodeWarning) {
           console.error("Iconv-lite warning: decode()-ing strings is deprecated. Refer to https://github.com/ashtuchkin/iconv-lite/wiki/Use-Buffers-when-decoding");
-          iconv2.skipDecodeWarning = true;
+          iconv3.skipDecodeWarning = true;
         }
         buf = Buffer2.from("" + (buf || ""), "binary");
       }
-      var decoder = iconv2.getDecoder(encoding, options);
+      var decoder = iconv3.getDecoder(encoding, options);
       var res = decoder.write(buf);
       var trail = decoder.end();
       return trail ? res + trail : res;
     };
-    iconv2.encodingExists = function encodingExists(enc) {
+    iconv3.encodingExists = function encodingExists(enc) {
       try {
-        iconv2.getCodec(enc);
+        iconv3.getCodec(enc);
         return true;
       } catch (e) {
         return false;
       }
     };
-    iconv2.toEncoding = iconv2.encode;
-    iconv2.fromEncoding = iconv2.decode;
-    iconv2._codecDataCache = {};
-    iconv2.getCodec = function getCodec(encoding) {
-      if (!iconv2.encodings)
-        iconv2.encodings = require_encodings2();
-      var enc = iconv2._canonicalizeEncoding(encoding);
+    iconv3.toEncoding = iconv3.encode;
+    iconv3.fromEncoding = iconv3.decode;
+    iconv3._codecDataCache = {};
+    iconv3.getCodec = function getCodec(encoding) {
+      if (!iconv3.encodings)
+        iconv3.encodings = require_encodings2();
+      var enc = iconv3._canonicalizeEncoding(encoding);
       var codecOptions = {};
       while (true) {
-        var codec = iconv2._codecDataCache[enc];
+        var codec = iconv3._codecDataCache[enc];
         if (codec)
           return codec;
-        var codecDef = iconv2.encodings[enc];
+        var codecDef = iconv3.encodings[enc];
         switch (typeof codecDef) {
           case "string":
             enc = codecDef;
@@ -24081,25 +24081,25 @@ var require_lib3 = __commonJS({
           case "function":
             if (!codecOptions.encodingName)
               codecOptions.encodingName = enc;
-            codec = new codecDef(codecOptions, iconv2);
-            iconv2._codecDataCache[codecOptions.encodingName] = codec;
+            codec = new codecDef(codecOptions, iconv3);
+            iconv3._codecDataCache[codecOptions.encodingName] = codec;
             return codec;
           default:
             throw new Error("Encoding not recognized: '" + encoding + "' (searched as: '" + enc + "')");
         }
       }
     };
-    iconv2._canonicalizeEncoding = function(encoding) {
+    iconv3._canonicalizeEncoding = function(encoding) {
       return ("" + encoding).toLowerCase().replace(/:\d{4}$|[^0-9a-z]/g, "");
     };
-    iconv2.getEncoder = function getEncoder(encoding, options) {
-      var codec = iconv2.getCodec(encoding), encoder = new codec.encoder(options, codec);
+    iconv3.getEncoder = function getEncoder(encoding, options) {
+      var codec = iconv3.getCodec(encoding), encoder = new codec.encoder(options, codec);
       if (codec.bomAware && options && options.addBOM)
         encoder = new bomHandling.PrependBOM(encoder, options);
       return encoder;
     };
-    iconv2.getDecoder = function getDecoder(encoding, options) {
-      var codec = iconv2.getCodec(encoding), decoder = new codec.decoder(options, codec);
+    iconv3.getDecoder = function getDecoder(encoding, options) {
+      var codec = iconv3.getCodec(encoding), decoder = new codec.decoder(options, codec);
       if (codec.bomAware && !(options && options.stripBOM === false))
         decoder = new bomHandling.StripBOM(decoder, options);
       return decoder;
@@ -24108,9 +24108,9 @@ var require_lib3 = __commonJS({
     if (nodeVer) {
       nodeVerArr = nodeVer.split(".").map(Number);
       if (nodeVerArr[0] > 0 || nodeVerArr[1] >= 10) {
-        require_streams2()(iconv2);
+        require_streams2()(iconv3);
       }
-      require_extend_node2()(iconv2);
+      require_extend_node2()(iconv3);
     }
     var nodeVerArr;
     if (false) {
@@ -24286,7 +24286,7 @@ var require_read = __commonJS({
     var createError = require_http_errors();
     var destroy = require_destroy();
     var getBody = require_raw_body();
-    var iconv2 = require_lib3();
+    var iconv3 = require_lib3();
     var onFinished = require_on_finished();
     var unpipe = require_unpipe();
     var zlib = require("zlib");
@@ -24307,7 +24307,7 @@ var require_read = __commonJS({
       }
       opts.length = length;
       opts.encoding = verify ? null : encoding;
-      if (opts.encoding === null && encoding !== null && !iconv2.encodingExists(encoding)) {
+      if (opts.encoding === null && encoding !== null && !iconv3.encodingExists(encoding)) {
         return next(createError(415, 'unsupported charset "' + encoding.toUpperCase() + '"', {
           charset: encoding.toLowerCase(),
           type: "charset.unsupported"
@@ -24349,7 +24349,7 @@ var require_read = __commonJS({
         var str = body;
         try {
           debug("parse body");
-          str = typeof body !== "string" && encoding !== null ? iconv2.decode(body, encoding) : body;
+          str = typeof body !== "string" && encoding !== null ? iconv3.decode(body, encoding) : body;
           req.body = parse(str);
         } catch (err) {
           next(createError(400, err, {
@@ -42857,7 +42857,7 @@ var require_internal3 = __commonJS({
       // Codec.
       _internal: InternalCodec
     };
-    function InternalCodec(codecOptions, iconv2) {
+    function InternalCodec(codecOptions, iconv3) {
       this.enc = codecOptions.encodingName;
       this.bomAware = codecOptions.bomAware;
       if (this.enc === "base64") {
@@ -42869,7 +42869,7 @@ var require_internal3 = __commonJS({
         this.encoder = InternalEncoderCesu8;
         if (Buffer2.from("eda0bdedb2a9", "hex").toString() !== "\u{1F4A9}") {
           this.decoder = InternalDecoderCesu8;
-          this.defaultCharUnicode = iconv2.defaultCharUnicode;
+          this.defaultCharUnicode = iconv3.defaultCharUnicode;
         }
       }
     }
@@ -43026,8 +43026,8 @@ var require_utf32 = __commonJS({
     "use strict";
     var Buffer2 = require_safer().Buffer;
     exports2._utf32 = Utf32Codec;
-    function Utf32Codec(codecOptions, iconv2) {
-      this.iconv = iconv2;
+    function Utf32Codec(codecOptions, iconv3) {
+      this.iconv = iconv3;
       this.bomAware = true;
       this.isLE = codecOptions.isLE;
     }
@@ -43155,8 +43155,8 @@ var require_utf32 = __commonJS({
     };
     exports2.utf32 = Utf32AutoCodec;
     exports2.ucs4 = "utf32";
-    function Utf32AutoCodec(options, iconv2) {
-      this.iconv = iconv2;
+    function Utf32AutoCodec(options, iconv3) {
+      this.iconv = iconv3;
     }
     Utf32AutoCodec.prototype.encoder = Utf32AutoEncoder;
     Utf32AutoCodec.prototype.decoder = Utf32AutoDecoder;
@@ -43306,8 +43306,8 @@ var require_utf163 = __commonJS({
       this.overflowByte = -1;
     };
     exports2.utf16 = Utf16Codec;
-    function Utf16Codec(codecOptions, iconv2) {
-      this.iconv = iconv2;
+    function Utf16Codec(codecOptions, iconv3) {
+      this.iconv = iconv3;
     }
     Utf16Codec.prototype.encoder = Utf16Encoder;
     Utf16Codec.prototype.decoder = Utf16Decoder;
@@ -43405,8 +43405,8 @@ var require_utf73 = __commonJS({
     var Buffer2 = require_safer().Buffer;
     exports2.utf7 = Utf7Codec;
     exports2.unicode11utf7 = "utf7";
-    function Utf7Codec(codecOptions, iconv2) {
-      this.iconv = iconv2;
+    function Utf7Codec(codecOptions, iconv3) {
+      this.iconv = iconv3;
     }
     Utf7Codec.prototype.encoder = Utf7Encoder;
     Utf7Codec.prototype.decoder = Utf7Decoder;
@@ -43488,8 +43488,8 @@ var require_utf73 = __commonJS({
       return res;
     };
     exports2.utf7imap = Utf7IMAPCodec;
-    function Utf7IMAPCodec(codecOptions, iconv2) {
-      this.iconv = iconv2;
+    function Utf7IMAPCodec(codecOptions, iconv3) {
+      this.iconv = iconv3;
     }
     Utf7IMAPCodec.prototype.encoder = Utf7IMAPEncoder;
     Utf7IMAPCodec.prototype.decoder = Utf7IMAPDecoder;
@@ -43622,7 +43622,7 @@ var require_sbcs_codec3 = __commonJS({
     "use strict";
     var Buffer2 = require_safer().Buffer;
     exports2._sbcs = SBCSCodec;
-    function SBCSCodec(codecOptions, iconv2) {
+    function SBCSCodec(codecOptions, iconv3) {
       if (!codecOptions) {
         throw new Error("SBCS codec is called without the data.");
       }
@@ -43637,7 +43637,7 @@ var require_sbcs_codec3 = __commonJS({
         codecOptions.chars = asciiString + codecOptions.chars;
       }
       this.decodeBuf = Buffer2.from(codecOptions.chars, "ucs2");
-      var encodeBuf = Buffer2.alloc(65536, iconv2.defaultCharSingleByte.charCodeAt(0));
+      var encodeBuf = Buffer2.alloc(65536, iconv3.defaultCharSingleByte.charCodeAt(0));
       for (var i = 0; i < codecOptions.chars.length; i++) {
         encodeBuf[codecOptions.chars.charCodeAt(i)] = i;
       }
@@ -44304,7 +44304,7 @@ var require_dbcs_codec3 = __commonJS({
       UNASSIGNED_NODE[i] = UNASSIGNED;
     }
     var i;
-    function DBCSCodec(codecOptions, iconv2) {
+    function DBCSCodec(codecOptions, iconv3) {
       this.encodingName = codecOptions.encodingName;
       if (!codecOptions) {
         throw new Error("DBCS codec is called without the data.");
@@ -44353,7 +44353,7 @@ var require_dbcs_codec3 = __commonJS({
           }
         }
       }
-      this.defaultCharUnicode = iconv2.defaultCharUnicode;
+      this.defaultCharUnicode = iconv3.defaultCharUnicode;
       this.encodeTable = [];
       this.encodeTableSeq = [];
       var skipEncodeChars = {};
@@ -44377,7 +44377,7 @@ var require_dbcs_codec3 = __commonJS({
           }
         }
       }
-      this.defCharSB = this.encodeTable[0][iconv2.defaultCharSingleByte.charCodeAt(0)];
+      this.defCharSB = this.encodeTable[0][iconv3.defaultCharSingleByte.charCodeAt(0)];
       if (this.defCharSB === UNASSIGNED) this.defCharSB = this.encodeTable[0]["?"];
       if (this.defCharSB === UNASSIGNED) this.defCharSB = "?".charCodeAt(0);
     }
@@ -46505,19 +46505,65 @@ var import_electron_updater = __toESM(require_main2(), 1);
 
 // server/fiscalBridge.ts
 var import_express = __toESM(require_express2(), 1);
-var import_serialport = require("serialport");
-var import_iconv_lite = __toESM(require_lib5(), 1);
+var import_serialport2 = require("serialport");
+var import_iconv_lite2 = __toESM(require_lib5(), 1);
 
 // server/dunaExeDriver.ts
 var import_child_process = require("child_process");
 var import_fs = __toESM(require("fs"), 1);
 var import_path = __toESM(require("path"), 1);
+var import_iconv_lite = __toESM(require_lib5(), 1);
+var import_serialport = require("serialport");
+function getSourceDriverDir(driverName) {
+  if (process.versions && process.versions.electron) {
+    const { app: app3 } = require("electron");
+    if (app3 && app3.isPackaged) {
+      return import_path.default.join(process.resourcesPath, "app.asar.unpacked", "drivers", driverName);
+    }
+  }
+  return import_path.default.join(__dirname, "../drivers", driverName);
+}
+function getWorkingDriverDir(driverName) {
+  const source = getSourceDriverDir(driverName);
+  if (process.versions && process.versions.electron) {
+    const { app: app3 } = require("electron");
+    if (app3 && app3.isPackaged) {
+      const target = import_path.default.join(app3.getPath("userData"), "drivers", driverName);
+      try {
+        if (!import_fs.default.existsSync(import_path.default.join(target, "Razvigorec.exe")) && import_fs.default.existsSync(source)) {
+          import_fs.default.mkdirSync(target, { recursive: true });
+          import_fs.default.cpSync(source, target, { recursive: true });
+        }
+        return target;
+      } catch (err) {
+        console.error("[DunaExeDriver] Could not copy driver to user data, using install folder:", err);
+      }
+    }
+  }
+  return source;
+}
 var DunaExeDriver = class {
   constructor() {
-    this.razvigorecPath = import_path.default.join(__dirname, "../../drivers/RAZVIGOREC/Razvigorec.exe");
-    this.driverDir = import_path.default.join(__dirname, "../../drivers/RAZVIGOREC");
+    this.driverDir = getWorkingDriverDir("RAZVIGOREC");
+    this.razvigorecPath = import_path.default.join(this.driverDir, "Razvigorec.exe");
+    this.iniPath = import_path.default.join(this.driverDir, "Razvigorec.ini");
+    this.commandPath = import_path.default.join(this.driverDir, "Razvigorec.txt");
+    this.resultPath = import_path.default.join(this.driverDir, "Result.out");
+    // Serialize jobs so two receipts never overwrite Razvigorec.txt at the same time
+    this.queue = Promise.resolve();
     if (!import_fs.default.existsSync(this.razvigorecPath)) {
       console.warn(`[DunaExeDriver] WARNING: Could not find Razvigorec.exe at ${this.razvigorecPath}`);
+    } else {
+      console.log(`[DunaExeDriver] Using driver at ${this.razvigorecPath} (port ${this.getConfiguredPort()})`);
+    }
+  }
+  getConfiguredPort() {
+    try {
+      const raw = import_fs.default.readFileSync(this.iniPath, "latin1");
+      const port = raw.split(/\r?\n/)[0].trim();
+      return port || "COM1";
+    } catch {
+      return "COM1";
     }
   }
   getStatus() {
@@ -46525,82 +46571,123 @@ var DunaExeDriver = class {
     return {
       connected: exists,
       simulator: !exists,
-      port: "EXE-MODE",
-      baudRate: 0
+      port: this.getConfiguredPort(),
+      baudRate: 0,
+      driverPath: this.razvigorecPath
     };
   }
   async getAvailablePorts() {
-    return ["EXE-MODE"];
+    try {
+      const ports = await import_serialport.SerialPort.list();
+      const list = ports.map((p) => p.path);
+      const current = this.getConfiguredPort();
+      if (!list.includes(current)) list.unshift(current);
+      return list;
+    } catch {
+      return [this.getConfiguredPort()];
+    }
   }
+  /** Called from Settings when the user picks a COM port: writes Razvigorec.ini */
   async detectAndConnect(port) {
+    if (!port || !/^COM\d+$/i.test(port)) return;
+    try {
+      import_fs.default.writeFileSync(this.iniPath, `${port.toUpperCase()}\r
+`, "latin1");
+      console.log(`[DunaExeDriver] COM port set to ${port.toUpperCase()}`);
+    } catch (err) {
+      console.error("[DunaExeDriver] Could not write Razvigorec.ini:", err);
+    }
   }
-  async executeRazvigorec(filename, content) {
+  cleanName(name) {
+    return name.replace(/[;\r\n@#]/g, " ").trim().substring(0, 32) || "Artikal";
+  }
+  itemLine(item) {
+    const group = ["A", "B", "V", "G"].includes(item.taxGroup) ? item.taxGroup : "A";
+    return `@${this.cleanName(item.name)};${group};${item.price.toFixed(2)};${item.quantity.toFixed(3)}`;
+  }
+  /** Razvigorec expects whole denars for payments (#G1000 = 1.000,00 ден) */
+  den(amount) {
+    return Math.round(amount).toString();
+  }
+  paymentLine(payload) {
+    const itemsTotal = payload.items.reduce((s, i) => s + i.price * i.quantity, 0);
+    const total = Math.max(payload.total || 0, itemsTotal);
+    if (payload.splitCard && payload.splitCard > 0 && payload.splitCash && payload.splitCash > 0) {
+      const card = Math.round(payload.splitCard);
+      const cash = Math.max(Math.round(total) - card, 0);
+      return `#M${cash};${card}`;
+    }
+    return payload.paymentMethod === "card" ? `#K${this.den(total)}` : `#G${this.den(total)}`;
+  }
+  readResult() {
+    try {
+      const text = import_iconv_lite.default.decode(import_fs.default.readFileSync(this.resultPath), "win1251");
+      const match = text.match(/сметка:\s*(\d+)/i);
+      return { text, receiptNumber: match ? match[1] : null };
+    } catch {
+      return { text: "", receiptNumber: null };
+    }
+  }
+  run(lines, expectReceipt) {
+    const job = this.queue.then(() => this.execute(lines, expectReceipt));
+    this.queue = job.catch(() => void 0);
+    return job;
+  }
+  async execute(lines, expectReceipt) {
+    const content = lines.join("\r\n") + "\r\n";
     if (!import_fs.default.existsSync(this.razvigorecPath)) {
-      console.log(`[SIMULATOR] EXE Driver not found. Printing to console:`);
-      console.log(content);
+      console.log(`[SIMULATOR] Razvigorec.exe not found. Would send:
+${content}`);
       return { success: true, message: "Simulator print success" };
     }
-    const filePath = import_path.default.join(this.driverDir, filename);
-    import_fs.default.writeFileSync(filePath, content, "utf-8");
+    try {
+      import_fs.default.writeFileSync(this.commandPath, import_iconv_lite.default.encode(content, "win1251"));
+      if (import_fs.default.existsSync(this.resultPath)) import_fs.default.unlinkSync(this.resultPath);
+    } catch (err) {
+      return { success: false, message: `Cannot write driver file: ${err?.message}` };
+    }
+    console.log(`[DunaExeDriver] Sending to ${this.getConfiguredPort()}:
+${content}`);
     return new Promise((resolve) => {
-      (0, import_child_process.execFile)(this.razvigorecPath, [filename], { cwd: this.driverDir }, (error, stdout, stderr) => {
+      (0, import_child_process.execFile)(this.razvigorecPath, [], { cwd: this.driverDir, timeout: 9e4, windowsHide: true }, (error) => {
+        const result = this.readResult();
+        console.log(`[DunaExeDriver] Result.out:
+${result.text}`);
         if (error) {
-          console.error(`[DunaExeDriver] Execution error:`, error);
-          resolve({ success: false, message: "Failed to run printer driver" });
-        } else {
-          resolve({ success: true, message: "Command executed successfully" });
+          resolve({ success: false, message: `Driver error: ${error.message}` });
+          return;
         }
+        if (expectReceipt && (!result.receiptNumber || result.receiptNumber === "0")) {
+          resolve({
+            success: false,
+            message: `\u041F\u0435\u0447\u0430\u0442\u0430\u0447\u043E\u0442 \u043D\u0435 \u043E\u0434\u0433\u043E\u0432\u043E\u0440\u0438 \u043D\u0430 ${this.getConfiguredPort()}. \u041F\u0440\u043E\u0432\u0435\u0440\u0435\u0442\u0435 COM \u043F\u043E\u0440\u0442\u0430 \u0438 \u0434\u0430\u043B\u0438 \u043A\u0430\u0441\u0430\u0442\u0430 \u0435 \u0432\u043E \u0440\u0435\u0436\u0438\u043C "6. \u041F\u0426".`
+          });
+          return;
+        }
+        resolve({
+          success: true,
+          message: result.receiptNumber ? `\u0424\u0438\u0441\u043A\u0430\u043B\u043D\u0430 \u0441\u043C\u0435\u0442\u043A\u0430 \u0431\u0440. ${result.receiptNumber}` : "Command executed successfully",
+          receiptNumber: result.receiptNumber || void 0
+        });
       });
     });
   }
   async printFiscalReceipt(payload) {
-    let content = `#F
-`;
-    for (const item of payload.items) {
-      const cleanName = item.name.substring(0, 20).replace(/;/g, " ");
-      content += `@${cleanName};${item.taxGroup};${item.price.toFixed(2)};${item.quantity.toFixed(3)}
-`;
-    }
-    if (payload.splitCard && payload.splitCard > 0 && payload.splitCash && payload.splitCash > 0) {
-      content += `#M${(payload.splitCash * 100).toFixed(0)};${(payload.splitCard * 100).toFixed(0)}
-`;
-    } else if (payload.paymentMethod === "card") {
-      content += `#K${payload.total.toFixed(2)}
-`;
-    } else {
-      content += `#G${payload.total.toFixed(2)}
-`;
-    }
-    return this.executeRazvigorec("receipt.txt", content);
+    const lines = ["#F", ...payload.items.map((i) => this.itemLine(i)), this.paymentLine(payload)];
+    return this.run(lines, true);
   }
   async printStornoReceipt(payload) {
-    let content = `#S
-`;
-    for (const item of payload.items) {
-      const cleanName = item.name.substring(0, 20).replace(/;/g, " ");
-      content += `@${cleanName};${item.taxGroup};${item.price.toFixed(2)};${item.quantity.toFixed(3)}
-`;
-    }
-    if (payload.paymentMethod === "card") {
-      content += `#K${payload.total.toFixed(2)}
-`;
-    } else {
-      content += `#G${payload.total.toFixed(2)}
-`;
-    }
-    return this.executeRazvigorec("storno.txt", content);
+    const lines = ["#S", ...payload.items.map((i) => this.itemLine(i)), this.paymentLine({ ...payload, splitCard: 0, splitCash: 0 })];
+    return this.run(lines, true);
   }
   async printTestSlip() {
-    return { success: true, message: "Test slip not supported in EXE mode" };
+    return this.run(["#X"], false);
   }
   async printDailyReport(type = "Z") {
-    let content = type === "Z" ? `#Z
-` : `#X
-`;
-    return this.executeRazvigorec("report.txt", content);
+    return this.run([type === "Z" ? "#Z" : "#X"], false);
   }
-  async printCashOperation(type, amount) {
-    return { success: false, message: "Cash operations not yet mapped for EXE mode" };
+  async printCashOperation(_type, _amount) {
+    return { success: false, message: "\u0421\u043B\u0443\u0436\u0431\u0435\u043D \u0432\u043B\u0435\u0437/\u0438\u0437\u043B\u0435\u0437 \u043D\u0435 \u0435 \u043F\u043E\u0434\u0434\u0440\u0436\u0430\u043D \u043E\u0434 Razvigorec \u0434\u0440\u0430\u0458\u0432\u0435\u0440\u043E\u0442 \u2014 \u0432\u043D\u0435\u0441\u0435\u0442\u0435 \u0433\u043E \u043D\u0430 \u043A\u0430\u0441\u0430\u0442\u0430 (+%)." };
   }
 };
 
